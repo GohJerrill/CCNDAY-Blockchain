@@ -1,0 +1,384 @@
+.registration-page {
+  min-height: 100vh;
+  padding: 130px 24px 70px;
+  font-family: "Poppins", system-ui, sans-serif;
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 78% 8%,
+      rgba(255, 45, 110, 0.28),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 54% 15%,
+      rgba(71, 84, 255, 0.18),
+      transparent 30%
+    ),
+    linear-gradient(110deg, #06070d 0%, #111629 48%, #1d1224 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+.registration-container {
+  width: min(760px, 100%);
+}
+
+.registration-card {
+  padding: 38px;
+  border-radius: 30px;
+  background:
+    radial-gradient(
+      circle at 80% 10%,
+      rgba(255, 90, 165, 0.16),
+      transparent 30%
+    ),
+    radial-gradient(circle at 20% 0%, rgba(49, 89, 245, 0.2), transparent 34%),
+    rgba(17, 24, 39, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 32px 100px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.registration-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.registration-tag {
+  width: fit-content;
+  margin: 0 auto 18px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.registration-role-preview {
+  margin: 0 0 28px;
+  padding: 30px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 70px rgba(0, 0, 0, 0.22);
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.registration-icon-wrapper {
+  width: 118px;
+  height: 118px;
+  border-radius: 30px;
+  background:
+    radial-gradient(
+      circle at 70% 55%,
+      rgba(118, 255, 183, 0.5),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 35% 20%,
+      rgba(255, 90, 140, 0.55),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 12% 22%,
+      rgba(133, 106, 255, 0.65),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #9c7cff, #ff6b9b 45%, #96e8a8 100%);
+  box-shadow: 0 24px 80px rgba(255, 95, 150, 0.22);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.registration-icon-wrapper img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  display: block;
+}
+
+.registration-role-content h2 {
+  margin: 0;
+  width: fit-content;
+  padding-bottom: 0.12em;
+  overflow: visible;
+  background: linear-gradient(90deg, #8da2ff 0%, #ff5aa5 55%, #5ef2c0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: clamp(1.8rem, 3.5vw, 2.7rem);
+  line-height: 1.22;
+  font-weight: 800;
+  letter-spacing: -2px;
+}
+
+.registration-role-content p {
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.65;
+}
+
+.registration-field {
+  display: grid;
+  gap: 10px;
+}
+
+.registration-field label {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.registration-custom-select {
+  position: relative;
+  width: 100%;
+  z-index: 10;
+}
+
+.registration-select-button {
+  width: 100%;
+  min-height: 58px;
+  padding: 15px 58px 15px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(44, 53, 95, 0.65);
+  color: rgba(255, 255, 255, 0.72);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1rem;
+  text-align: left;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.registration-select-button:hover {
+  background: rgba(54, 64, 112, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.registration-select-button:focus {
+  border-color: rgba(141, 162, 255, 0.75);
+  box-shadow: 0 0 0 4px rgba(49, 89, 245, 0.18);
+}
+
+.registration-select-button.has-value {
+  color: #ffffff;
+}
+
+.registration-select-icon {
+  position: absolute;
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%) rotate(0deg);
+  color: #ffffff;
+  font-size: 1.25rem;
+  pointer-events: none;
+  transition: transform 0.22s ease;
+}
+
+.registration-select-icon.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.registration-options {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 280px;
+  padding: 10px;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(255, 90, 165, 0.14),
+      transparent 34%
+    ),
+    rgba(17, 24, 39, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.98);
+  transition:
+    opacity 0.18s ease,
+    visibility 0.18s ease,
+    transform 0.18s ease;
+}
+
+.registration-options.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.registration-option {
+  width: 100%;
+  padding: 13px 14px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.76);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.98rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.registration-option:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  transform: translateX(2px);
+}
+
+.registration-option.selected {
+  background: linear-gradient(135deg, #3159f5 0%, #6d5dfc 100%);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.registration-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.registration-options::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.registration-options::-webkit-scrollbar-thumb {
+  background: rgba(141, 162, 255, 0.45);
+  border-radius: 999px;
+}
+
+.registration-error-text {
+  margin: 10px 0 0;
+  color: #ff6b8a;
+  font-family: "Inter";
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.registration-success-text {
+  margin: 10px 0 0;
+  color: #5ef2c0;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.staff-warning-pill {
+  width: max-content;
+  max-width: 100%;
+  margin: 18px auto 0;
+  padding: 13px 22px;
+  border-radius: 999px;
+  background: rgba(255, 90, 165, 0.12);
+  border: 1px solid rgba(255, 90, 165, 0.28);
+  color: #ffb4d4;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.registration-submit-button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3159f5 0%, #6d5dfc 55%, #8da2ff 100%);
+  color: #ffffff;
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 40px rgba(49, 89, 245, 0.3);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.registration-submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 54px rgba(49, 89, 245, 0.38);
+}
+
+.registration-submit-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 560px) {
+  .registration-page {
+    padding: 92px 14px 44px;
+  }
+
+  .registration-card {
+    padding: 24px;
+    border-radius: 26px;
+  }
+
+  .registration-role-preview {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .registration-role-content h2 {
+    margin-left: auto;
+    margin-right: auto;
+    letter-spacing: -1.5px;
+  }
+
+  .registration-icon-wrapper {
+    width: 104px;
+    height: 104px;
+  }
+
+  .registration-icon-wrapper img {
+    width: 68px;
+    height: 68px;
+  }
+
+  .staff-warning-pill {
+    width: 100%;
+    border-radius: 18px;
+    white-space: normal;
+  }
+}
