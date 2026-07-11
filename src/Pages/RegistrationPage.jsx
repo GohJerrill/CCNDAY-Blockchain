@@ -19,8 +19,9 @@ const RegistrationPage = () => {
   // Mock for now.
   // Later this will come from AuthenticateMyWallet().
   // Change "student" to "staff" to preview staff registration.
-  const [registrationType] = useState("staff");
+  const [registrationType] = useState("student");
 
+  const [username, setUsername] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [formError, setFormError] = useState("");
@@ -59,11 +60,20 @@ const RegistrationPage = () => {
     };
   }, []);
 
+  const resetMessages = () => {
+    setFormError("");
+    setSuccessMessage("");
+  };
+
+  const handleUsernameChange = (event) => {
+    setUsername(event.target.value);
+    resetMessages();
+  };
+
   const handleSchoolSelect = (schoolValue) => {
     setSelectedSchool(schoolValue);
     setIsDropdownOpen(false);
-    setFormError("");
-    setSuccessMessage("");
+    resetMessages();
   };
 
   const handleSubmit = (event) => {
@@ -72,12 +82,23 @@ const RegistrationPage = () => {
     setFormError("");
     setSuccessMessage("");
 
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
+      setFormError("Please enter a username first.");
+      return;
+    }
+
+    if (trimmedUsername.length > 32) {
+      setFormError("Username must be 32 characters or less.");
+      return;
+    }
+
     if (!selectedSchool) {
       setFormError("Please select a school first.");
       return;
     }
 
-    // Safety check. Student dropdown does not show Others, but keep this guard for future blockchain logic.
     if (!isStaffRegistration && selectedSchool === "Others") {
       setFormError("Students must select an appropriate TP school.");
       return;
@@ -86,7 +107,7 @@ const RegistrationPage = () => {
     setSuccessMessage(
       `Mock registration submitted as ${
         isStaffRegistration ? "Staff" : "Student"
-      } under ${selectedSchool}.`,
+      } with username "${trimmedUsername}" under ${selectedSchool}.`,
     );
   };
 
@@ -123,6 +144,19 @@ const RegistrationPage = () => {
                   : "Student accounts can apply for stalls only if their school is eligible."}
               </p>
             </div>
+          </div>
+
+          <div className="registration-field">
+            <label htmlFor="username">Username</label>
+
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={handleUsernameChange}
+              placeholder="Enter your display username"
+              maxLength={32}
+            />
           </div>
 
           <div className="registration-field">

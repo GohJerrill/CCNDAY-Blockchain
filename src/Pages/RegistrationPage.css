@@ -135,12 +135,44 @@
 .registration-field {
   display: grid;
   gap: 10px;
+  margin-top: 18px;
 }
 
 .registration-field label {
   color: rgba(255, 255, 255, 0.82);
   font-size: 0.92rem;
   font-weight: 800;
+}
+
+.registration-field input {
+  width: 100%;
+  min-height: 58px;
+  padding: 15px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(44, 53, 95, 0.65);
+  color: #ffffff;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1rem;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.registration-field input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.registration-field input:hover {
+  background: rgba(54, 64, 112, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.registration-field input:focus {
+  border-color: rgba(141, 162, 255, 0.75);
+  box-shadow: 0 0 0 4px rgba(49, 89, 245, 0.18);
 }
 
 .registration-custom-select {
@@ -285,7 +317,7 @@
 .registration-error-text {
   margin: 10px 0 0;
   color: #ff6b8a;
-  font-family: "Inter";
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 17px;
   font-weight: 800;
   text-align: center;
