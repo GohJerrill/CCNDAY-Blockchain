@@ -1,14 +1,28 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import LandingPage from "./Pages/LandingPage";
 import RegistrationPage from "./Pages/RegistrationPage";
-import heroImg from "./assets/hero.png";
-import "./App.css";
 import Dashboard from "./Pages/Dashboard";
+import Sidebar from "./Components/Sidebar";
+import Stall from "./Pages/Stall";
+import "./App.css";
 
 // Initial Commit - Set up the start of the project BABY - 2nd July
 // Did the Landing page.jsx - 3rd July
 // Completed the Mock Registration page.jsx - 4th July
 // Did the user Dashboard.jsx, preparing for backend testing and further frontend implementation - 12 July
+// Completed the main dashboard page, prearing to start on the other pages and login - 13 July
+
+const DashboardLayout = () => {
+  return (
+    <div className="dashboard-page">
+      <Sidebar />
+
+      <div className="dashboard-workspace">
+        <Outlet />
+      </div>
+    </div>
+  );
+};
 
 function App() {
   return (
@@ -16,7 +30,15 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/RegisterBABY" element={<RegistrationPage />} />
-        <Route path="/UserDashboard" element={<Dashboard />} />
+
+        <Route element={<DashboardLayout />}>
+          <Route path="/UserDashboard" element={<Dashboard />} />
+          <Route path="/Stall" element={<Stall/>} />
+
+          {/* Add these when the pages are ready */}
+          {/* <Route path="/MyStall" element={<MyStallPage />} /> */}
+          {/* <Route path="/Profile" element={<ProfilePage />} /> */}
+        </Route>
       </Routes>
     </BrowserRouter>
   );
