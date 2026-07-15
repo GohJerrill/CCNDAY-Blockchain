@@ -5,6 +5,8 @@ import Dashboard from "./Pages/Dashboard";
 import Sidebar from "./Components/Sidebar";
 import Stall from "./Pages/Stall";
 import ProfilePage from "./Pages/ProfilePage";
+import ProtectedRoute from "./Components/ProtectedRoute";
+import { Web3Provider } from "./context/Web3Context";
 import "./App.css";
 
 // Initial Commit - Set up the start of the project BABY - 2nd July
@@ -13,6 +15,7 @@ import "./App.css";
 // Did the user Dashboard.jsx, preparing for backend testing and further frontend implementation - 12 July
 // Completed the main dashboard page, prearing to start on the other pages and login - 13 July
 // Completed the Profile page and the Stall page, preparing to start login and integration with Blockchain - 14 july 2026
+// Implemented and connected the Blockchain mainly on Authentication and Stalls. Preparing to do more next time - 16 July 2026
 
 const DashboardLayout = () => {
   return (
@@ -29,20 +32,20 @@ const DashboardLayout = () => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/RegisterBABY" element={<RegistrationPage />} />
+      <Web3Provider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/RegisterBABY" element={<RegistrationPage />} />
 
-        <Route element={<DashboardLayout />}>
-          <Route path="/UserDashboard" element={<Dashboard />} />
-          <Route path="/Stall" element={<Stall/>} />
-          <Route path="/UserProfile" element={<ProfilePage/>} />
-
-          {/* Add these when the pages are ready */}
-          {/* <Route path="/MyStall" element={<MyStallPage />} /> */}
-          {/* <Route path="/Profile" element={<ProfilePage />} /> */}
-        </Route>
-      </Routes>
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/UserDashboard" element={<Dashboard />} />
+              <Route path="/Stall" element={<Stall />} />
+              <Route path="/UserProfile" element={<ProfilePage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Web3Provider>
     </BrowserRouter>
   );
 }

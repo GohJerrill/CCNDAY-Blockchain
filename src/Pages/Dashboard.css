@@ -271,6 +271,72 @@
   stroke-linecap: round;
 }
 
+/* ROLE-BASED PROFILE COLOURS */
+
+.dashboard-account-student .dashboard-default-avatar {
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255, 255, 255, 0.22),
+      transparent 24%
+    ),
+    linear-gradient(135deg, #4a3c74, #29243f);
+  border-color: rgba(188, 156, 255, 0.24);
+}
+
+.dashboard-account-student .dashboard-account-role {
+  background: rgba(140, 92, 255, 0.12);
+  color: #bc9cff;
+}
+
+.dashboard-account-staff .dashboard-default-avatar {
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255, 255, 255, 0.2),
+      transparent 24%
+    ),
+    linear-gradient(135deg, #24456f, #16243e);
+  border-color: rgba(111, 177, 255, 0.28);
+}
+
+.dashboard-account-staff .dashboard-account-role {
+  background: rgba(77, 158, 255, 0.14);
+  color: #8fc4ff;
+}
+
+.dashboard-account-stall-owner .dashboard-default-avatar {
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255, 255, 255, 0.2),
+      transparent 24%
+    ),
+    linear-gradient(135deg, #23644f, #17372d);
+  border-color: rgba(80, 214, 170, 0.3);
+}
+
+.dashboard-account-stall-owner .dashboard-account-role {
+  background: rgba(80, 214, 170, 0.14);
+  color: #65e0b9;
+}
+
+.dashboard-account-organiser .dashboard-default-avatar {
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255, 255, 255, 0.2),
+      transparent 24%
+    ),
+    linear-gradient(135deg, #7a4a1f, #3d2516);
+  border-color: rgba(255, 174, 88, 0.34);
+}
+
+.dashboard-account-organiser .dashboard-account-role {
+  background: rgba(255, 164, 74, 0.15);
+  color: #ffb66d;
+}
+
 /* MAIN */
 
 .dashboard-main {

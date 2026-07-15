@@ -1,0 +1,1453 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "AllowStallWithdrawal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_stallLocation",
+        "type": "string"
+      },
+      {
+        "internalType": "enum School",
+        "name": "_stallSchool",
+        "type": "uint8"
+      }
+    ],
+    "name": "ApproveStall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_organiserWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_userContractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_ccnDayContractAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayNotEnded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotDeleteStallDuringCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_productName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_productDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_productImage",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_productPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum ProductStatus",
+        "name": "_productStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "CreateProduct",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_stallName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_stallDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_stallImage",
+        "type": "string"
+      },
+      {
+        "internalType": "enum StallType",
+        "name": "_stallType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "_needElectricalPort",
+        "type": "bool"
+      }
+    ],
+    "name": "CreateStall",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeleteMyStall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeleteProduct",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeleteStall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeleteStallsByCCNDay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_productName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_productDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_productImage",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_productPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum ProductStatus",
+        "name": "_productStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "EditProduct",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EligibleSchoolCannotBeOthers",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyProductDescription",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyProductImage",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyProductName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyStallDescription",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyStallImage",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyStallLocation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyStallName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidWallet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotApprovedStallOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOrganiser",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotStudentOrStaff",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyOpenOrClosedCanBeDeleted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyOpenOrClosedCanBeUpdated",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyPendingStallCanBeApproved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyPendingStallCanBeRejected",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyStallOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrganiserCannotCreateStall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OwnerCanOnlySetOpenOrClosed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProductDescriptionTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProductDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProductImageTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProductNameTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProductPriceMustBeMoreThanZero",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SchoolNotEligible",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallDescriptionTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallHasUnsettledPaidPayments",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallLocationTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNameTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNotFromCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNotReadyForWithdrawal",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallRegistrationNotOpen",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletAlreadyCreatedStall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletHasNotCreatedStall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletNotRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WithdrawalAlreadyAllowed",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "ProductID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum ProductStatus",
+        "name": "NewStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "ProductAvailabilityUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "ProductId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProductCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "ProductID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProductDeleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "ProductID",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProductUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "RejectStall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_paymentContractAddress",
+        "type": "address"
+      }
+    ],
+    "name": "SetPaymentContractAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      }
+    ],
+    "name": "StallApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "CCNDayID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      }
+    ],
+    "name": "StallCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "DeleteBy",
+        "type": "address"
+      }
+    ],
+    "name": "StallDeleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      }
+    ],
+    "name": "StallRejected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum StallStatus",
+        "name": "OldStatus",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum StallStatus",
+        "name": "NewStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "StallStatusUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      }
+    ],
+    "name": "StallWithdrawalAllowed",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum StallStatus",
+        "name": "_newStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "UpdateMyStallOpenStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "CanWalletCreateStall",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ccnDayContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkCCNDayForStalls",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "CCNDayStallIDs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DoesProductExist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DoesStallExist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetCurrentCCNDayStalls",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "StallName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallImage",
+            "type": "string"
+          },
+          {
+            "internalType": "enum StallType",
+            "name": "stallType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "StallLocation",
+            "type": "string"
+          },
+          {
+            "internalType": "enum School",
+            "name": "StallSchool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "NeedElectricalPort",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StallStatus",
+            "name": "stallStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "AllowedWithdrawal",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Stall[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetMyStall",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "StallName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallImage",
+            "type": "string"
+          },
+          {
+            "internalType": "enum StallType",
+            "name": "stallType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "StallLocation",
+            "type": "string"
+          },
+          {
+            "internalType": "enum School",
+            "name": "StallSchool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "NeedElectricalPort",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StallStatus",
+            "name": "stallStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "AllowedWithdrawal",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Stall",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetProductIDsByStallID",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetStallCCNDayID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetStallDetails",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "StallName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallImage",
+            "type": "string"
+          },
+          {
+            "internalType": "enum StallType",
+            "name": "stallType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "StallLocation",
+            "type": "string"
+          },
+          {
+            "internalType": "enum School",
+            "name": "StallSchool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "NeedElectricalPort",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StallStatus",
+            "name": "stallStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "AllowedWithdrawal",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Stall",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetStallOwnerWallet",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "GetWalletStallID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "HasCreatedStall",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "HasCreatedStallForCurrentCCNDay",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "IsStallOpen",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "IsStallOwner",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "IsStallWithdrawalAllowed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "IsWalletApprovedStallOwner",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "Organiser",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkPaymentsForStalls",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "Products",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "ProductID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "ProductName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ProductDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ProductImage",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ProductPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum ProductStatus",
+        "name": "productStatus",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "StallIDList",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "StallProductIDs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "Stalls",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "StallName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "StallDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "StallImage",
+        "type": "string"
+      },
+      {
+        "internalType": "enum StallType",
+        "name": "stallType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "StallLocation",
+        "type": "string"
+      },
+      {
+        "internalType": "enum School",
+        "name": "StallSchool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "NeedElectricalPort",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "CreatedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum StallStatus",
+        "name": "stallStatus",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "AllowedWithdrawal",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "CCNDayID",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "userContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkUsersForStalls",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "WalletStallID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

@@ -1,0 +1,584 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_organiserWallet",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayEndTimeInPast",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CanOnlyDeleteCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CanOnlyEditCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_ccnName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ccnDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_startDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_endDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stallRegistrationStartDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stallRegistrationEndDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum School[]",
+        "name": "_eligibleSchools",
+        "type": "uint8[]"
+      }
+    ],
+    "name": "CreateNewCCNDay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayDeleted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayStillActive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeleteCCNDay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DuplicateEligibleSchools",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_ccnName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ccnDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_startDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_endDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stallRegistrationStartDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stallRegistrationEndDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum School[]",
+        "name": "_eligibleSchools",
+        "type": "uint8[]"
+      }
+    ],
+    "name": "EditCCNDay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EligibleSchoolCannotBeOthers",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyCCNDescription",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyCCNName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyEligibleSchools",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCCNDateRange",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCCNDayID",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidRegistrationDateRange",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidWallet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOrganiser",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RegistrationEndsAfterCCNStart",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_stallContractAddress",
+        "type": "address"
+      }
+    ],
+    "name": "SetStallContractAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "CCNDays",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "CCNDayID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "CCNName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "CCNDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StartDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "EndDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StallRegistrationStartDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StallRegistrationEndDateTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "CreatedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "CreatedBy",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "CCNEligibleSchoolList",
+    "outputs": [
+      {
+        "internalType": "enum School",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum School",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "CCNEligibleSchools",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DoesCCNDayExist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetCCNDayEligibleSchools",
+    "outputs": [
+      {
+        "internalType": "enum School[]",
+        "name": "",
+        "type": "uint8[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetCCNDayEndTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetCCNDayStartTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetCurrentCCNDay",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "CCNName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "CCNDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StartDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "EndDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallRegistrationStartDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallRegistrationEndDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "CreatedBy",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct CCNDay",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetCurrentCCNDayID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "IsCurrentCCNDayActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum School",
+        "name": "_school",
+        "type": "uint8"
+      }
+    ],
+    "name": "IsSchoolEligibleForCCNDay",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum School",
+        "name": "_school",
+        "type": "uint8"
+      }
+    ],
+    "name": "IsSchoolEligibleForCurrentCCNDay",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "IsStallRegistrationOpen",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "Organiser",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stallContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkStallsForCCNDay",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

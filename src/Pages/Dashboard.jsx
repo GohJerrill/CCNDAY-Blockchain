@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useWeb3 } from "../context/Web3Context";
+import NoCCNDay from "../assets/NoCCNDay.svg";
 import "./Dashboard.css";
 import NoAvailableStall from "../assets/NoAvailableStall.svg";
 
@@ -151,6 +153,8 @@ const stallTypeOptions = [
   "Others",
 ];
 
+const stallStatusLabels = ["Pending", "Open", "Closed", "Rejected"];
+
 const schoolOptions = [
   "IIT",
   "Business",
@@ -160,8 +164,68 @@ const schoolOptions = [
   "Humanities",
 ];
 
+const userTypeLabels = ["Customer", "Student", "Staff"];
+
+const schoolLabels = [
+  "IIT",
+  "Business",
+  "Engineering",
+  "Design",
+  "Science",
+  "Humanities",
+  "Others",
+];
+
 const formatWalletAddress = (walletAddress) => {
+  if (!walletAddress) return "Unknown wallet";
+
   return `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`;
+};
+
+const toNumber = (value) => {
+  if (value === undefined || value === null) return 0;
+
+  return Number(value.toString());
+};
+
+const getStallLoadErrorType = (error) => {
+  const combinedErrorMessage = [
+    error?.reason,
+    error?.shortMessage,
+    error?.message,
+    error?.info?.error?.message,
+    error?.info?.error?.data?.message,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (combinedErrorMessage.includes("NoCurrentCCNDay")) {
+    return "no-current-ccn-day";
+  }
+
+  return "unknown-error";
+};
+
+const mapStallFromContract = (stall) => {
+  const stallTypeValue = toNumber(stall.stallType ?? stall[4]);
+  const stallSchoolValue = toNumber(stall.StallSchool ?? stall[7]);
+  const stallStatusValue = toNumber(stall.stallStatus ?? stall[10]);
+
+  return {
+    StallID: toNumber(stall.StallID ?? stall[0]),
+    StallName: stall.StallName ?? stall[1],
+    StallDescription: stall.StallDescription ?? stall[2],
+    StallImage: stall.StallImage ?? stall[3],
+    stallType: stallTypeLabels[stallTypeValue] || "Others",
+    StallOwnerWallet: stall.StallOwnerWallet ?? stall[5],
+    StallLocation: stall.StallLocation ?? stall[6],
+    StallSchool: schoolLabels[stallSchoolValue] || "Others",
+    NeedElectricalPort: Boolean(stall.NeedElectricalPort ?? stall[8]),
+    CreatedAt: toNumber(stall.CreatedAt ?? stall[9]),
+    stallStatus: stallStatusLabels[stallStatusValue] || "Unknown",
+    AllowedWithdrawal: Boolean(stall.AllowedWithdrawal ?? stall[11]),
+    CCNDayID: toNumber(stall.CCNDayID ?? stall[12]),
+  };
 };
 
 const SearchIcon = () => (
@@ -194,11 +258,143 @@ const LocationIcon = () => (
 );
 
 const Dashboard = () => {
+  const {
+    walletAddress,
+    formattedWalletAddress,
+    usersContract,
+    stallsContract,
+    isConnected,
+  } = useWeb3();
+
+  // For filtering for the different stalls.
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStallType, setSelectedStallType] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
 
-  const filteredStalls = mockStalls.filter((stall) => {
+  // For Account rendering states
+  const [accountRole, setAccountRole] = useState("Loading...");
+  const [accountSchool, setAccountSchool] = useState("");
+  const [accountTheme, setAccountTheme] = useState("student");
+  const [isLoadingAccount, setIsLoadingAccount] = useState(true);
+
+  // Fall Stall Render
+  const [stalls, setStalls] = useState([]);
+  const [isLoadingStalls, setIsLoadingStalls] = useState(true);
+  const [stallsError, setStallsError] = useState("");
+  const [stallLoadState, setStallLoadState] = useState("loading");
+
+  // Load account details //
+  useEffect(() => {
+    const loadAccountDetails = async () => {
+      if (!isConnected || !walletAddress || !usersContract) {
+        setAccountRole("Not connected");
+        setAccountSchool("");
+        setAccountTheme("student");
+        setIsLoadingAccount(false);
+        return;
+      }
+
+      try {
+        setIsLoadingAccount(true);
+
+        const authProfile = await usersContract.AuthenticateMyWallet();
+
+        const isOrganiser = Boolean(authProfile.isOrganiser ?? authProfile[3]);
+        const userTypeValue = Number(authProfile.usertype ?? authProfile[6]);
+        const schoolValue = Number(authProfile.school ?? authProfile[7]);
+
+        if (isOrganiser) {
+          setAccountRole("Organiser");
+          setAccountSchool("");
+          setAccountTheme("organiser");
+          return;
+        }
+
+        const isApprovedStallOwner = stallsContract
+          ? await stallsContract.IsWalletApprovedStallOwner(walletAddress)
+          : false;
+
+        if (isApprovedStallOwner) {
+          setAccountRole("Stall Owner");
+          setAccountSchool(schoolLabels[schoolValue] || "");
+          setAccountTheme("stall-owner");
+          return;
+        }
+
+        const readableUserRole =
+          userTypeLabels[userTypeValue] || "Registered user";
+
+        setAccountRole(readableUserRole);
+        setAccountSchool(schoolLabels[schoolValue] || "");
+
+        if (readableUserRole === "Staff") {
+          setAccountTheme("staff");
+          return;
+        }
+
+        setAccountTheme("student");
+      } catch (error) {
+        console.error("Dashboard account load error:", error);
+        setAccountRole("Unknown user");
+        setAccountSchool("");
+      } finally {
+        setIsLoadingAccount(false);
+      }
+    };
+
+    loadAccountDetails();
+  }, [isConnected, walletAddress, usersContract, stallsContract]);
+
+  // Load CCN Day stalls
+  useEffect(() => {
+    const loadCurrentCCNDayStalls = async () => {
+      if (!stallsContract) {
+        setStalls([]);
+        setStallsError("");
+        setStallLoadState("error");
+        setIsLoadingStalls(false);
+        return;
+      }
+
+      try {
+        setIsLoadingStalls(true);
+        setStallsError("");
+        setStallLoadState("loading");
+
+        const contractStalls = await stallsContract.GetCurrentCCNDayStalls();
+
+        const mappedStalls = contractStalls
+          .map(mapStallFromContract)
+          .filter((stall) => stall.stallStatus === "Open");
+
+        setStalls(mappedStalls);
+        setStallsError("");
+        setStallLoadState("ready");
+      } catch (error) {
+        console.error("Dashboard stall load error:", error);
+
+        const errorType = getStallLoadErrorType(error);
+
+        setStalls([]);
+
+        if (errorType === "no-current-ccn-day") {
+          setStallsError("");
+          setStallLoadState("no-current-ccn-day");
+        } else {
+          setStallsError(
+            "Unable to load stalls from the blockchain. Please try again.",
+          );
+          setStallLoadState("error");
+        }
+      } finally {
+        setIsLoadingStalls(false);
+      }
+    };
+
+    loadCurrentCCNDayStalls();
+  }, [stallsContract]);
+
+  const filteredStalls = stalls.filter((stall) => {
     const stallName = stall.StallName.toLowerCase();
     const searchValue = searchTerm.trim().toLowerCase();
 
@@ -219,13 +415,47 @@ const Dashboard = () => {
     selectedStallType !== "all" ||
     selectedSchool !== "all";
 
-  const emptyStateTitle = hasActiveFilters
-    ? "No stalls match your search"
-    : "No stalls available";
+  const hasNoFilteredResults =
+    stallLoadState === "ready" &&
+    stalls.length > 0 &&
+    filteredStalls.length === 0;
 
-  const emptyStateDescription = hasActiveFilters
-    ? "Try changing your search keyword, stall type, or school filter."
-    : "There are currently no approved stalls available for this CCN Day.";
+  const hasNoCurrentCCNDay = stallLoadState === "no-current-ccn-day";
+  const hasNoOpenStalls =
+    stallLoadState === "ready" && stalls.length === 0 && !hasActiveFilters;
+
+  let emptyStateImage = NoAvailableStall;
+  let emptyStateTitle = "No stalls available";
+  let emptyStateDescription =
+    "There are currently no approved open stalls available for this CCN Day.";
+
+  if (isLoadingStalls) {
+    emptyStateTitle = "Loading stalls...";
+    emptyStateDescription =
+      "Please wait while CareLink loads the latest stalls from the blockchain.";
+  } else if (hasNoCurrentCCNDay) {
+    emptyStateImage = NoCCNDay;
+    emptyStateTitle = "No current CCN Day";
+    emptyStateDescription =
+      "There is currently no active CCN Day, so no stalls are available yet.";
+  } else if (stallLoadState === "error") {
+    emptyStateTitle = "Unable to load stalls";
+    emptyStateDescription = stallsError;
+  } else if (hasNoFilteredResults) {
+    emptyStateTitle = "No stalls match your filters";
+    emptyStateDescription =
+      "Try changing your search keyword, stall type, or school filter.";
+  } else if (hasNoOpenStalls) {
+    emptyStateTitle = "No stalls available";
+    emptyStateDescription =
+      "A CCN Day is active, but there are no approved open stalls available yet.";
+  }
+
+  const shouldShowEmptyState =
+    isLoadingStalls ||
+    hasNoCurrentCCNDay ||
+    stallLoadState === "error" ||
+    filteredStalls.length === 0;
 
   return (
     <>
@@ -246,15 +476,26 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="dashboard-account">
+        <div className={`dashboard-account dashboard-account-${accountTheme}`}>
           <div className="dashboard-default-avatar">
             <UserIcon />
           </div>
 
           <div className="dashboard-account-details">
-            <span className="dashboard-wallet-address">0x71C4...93A2</span>
+            <span
+              className="dashboard-wallet-address"
+              title={walletAddress || "Wallet not connected"}
+            >
+              {isConnected ? formattedWalletAddress : "Not connected"}
+            </span>
 
-            <span className="dashboard-account-role">Student</span>
+            <span className="dashboard-account-role">
+              {isLoadingAccount
+                ? "Loading..."
+                : accountSchool
+                  ? `${accountRole} · ${accountSchool}`
+                  : accountRole}
+            </span>
           </div>
         </div>
       </header>
@@ -318,22 +559,27 @@ const Dashboard = () => {
             <div>
               <h2>All stalls</h2>
               <span>
-                {filteredStalls.length} of {mockStalls.length} approved stalls
+                {isLoadingStalls
+                  ? "Loading blockchain stalls..."
+                  : hasNoCurrentCCNDay
+                    ? "No active CCN Day"
+                    : stallLoadState === "error"
+                      ? "Unable to load stalls"
+                      : `${filteredStalls.length} of ${stalls.length} open stalls`}
               </span>
             </div>
           </div>
 
           <div className="dashboard-stall-grid">
-            {filteredStalls.length === 0 ? (
+            {isLoadingStalls || stallsError || shouldShowEmptyState ? (
               <div className="dashboard-empty-state">
                 <img
-                  src={NoAvailableStall}
-                  alt=""
+                  src={emptyStateImage}
+                  alt={emptyStateTitle}
                   className="dashboard-empty-state-image"
                 />
 
                 <h3>{emptyStateTitle}</h3>
-
                 <p>{emptyStateDescription}</p>
               </div>
             ) : (

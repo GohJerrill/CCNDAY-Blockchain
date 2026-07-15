@@ -1,8 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./RegistrationPage.css";
 import StaffRegisterIcon from "../assets/StaffRegister.svg";
 import StudentRegisterIcon from "../assets/StudentRegister.svg";
 import { IoIosArrowDown } from "react-icons/io";
+import { useWeb3 } from "../context/Web3Context";
+
+const SCHOOL_ENUM_VALUES = {
+  IIT: 0,
+  Business: 1,
+  Engineering: 2,
+  Design: 3,
+  Science: 4,
+  Humanities: 5,
+  Others: 6,
+};
 
 const studentSchools = [
   { label: "School of Informatics & IT", value: "IIT" },
@@ -16,10 +28,19 @@ const studentSchools = [
 const staffSchools = [...studentSchools, { label: "Others", value: "Others" }];
 
 const RegistrationPage = () => {
-  // Mock for now.
-  // Later this will come from AuthenticateMyWallet().
-  // Change "student" to "staff" to preview staff registration.
-  const [registrationType] = useState("student");
+  const navigate = useNavigate();
+
+  const {
+    walletAddress,
+    isConnected,
+    usersContract,
+    connectWallet,
+    isConnecting,
+  } = useWeb3();
+
+  const [registrationType, setRegistrationType] = useState("student");
+  const [isCheckingWallet, setIsCheckingWallet] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [username, setUsername] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
@@ -45,6 +66,41 @@ const RegistrationPage = () => {
   const registerIcon = isStaffRegistration
     ? StaffRegisterIcon
     : StudentRegisterIcon;
+
+  useEffect(() => {
+    const checkWalletRegistrationType = async () => {
+      if (!isConnected || !walletAddress || !usersContract) {
+        setIsCheckingWallet(false);
+        return;
+      }
+
+      try {
+        setIsCheckingWallet(true);
+
+        const isAlreadyRegistered =
+          await usersContract.IsWalletRegistered(walletAddress);
+
+        if (isAlreadyRegistered) {
+          navigate("/UserDashboard");
+          return;
+        }
+
+        const isStaffWhitelisted =
+          await usersContract.IsWalletStaffWhitelisted(walletAddress);
+
+        setRegistrationType(isStaffWhitelisted ? "staff" : "student");
+      } catch (error) {
+        console.error("Registration wallet check error:", error);
+        setFormError(
+          "Unable to check your wallet registration status. Please try again.",
+        );
+      } finally {
+        setIsCheckingWallet(false);
+      }
+    };
+
+    checkWalletRegistrationType();
+  }, [isConnected, walletAddress, usersContract, navigate]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -76,11 +132,33 @@ const RegistrationPage = () => {
     resetMessages();
   };
 
-  const handleSubmit = (event) => {
+  const handleConnectWallet = async () => {
+    const result = await connectWallet();
+
+    if (!result.connected) {
+      setFormError("Please connect your MetaMask wallet before registering.");
+    }
+  };
+
+  const getReadableError = (error) => {
+    return (
+      error?.reason ||
+      error?.shortMessage ||
+      error?.message ||
+      "Registration failed. Please try again."
+    );
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setFormError("");
     setSuccessMessage("");
+
+    if (!isConnected || !walletAddress || !usersContract) {
+      setFormError("Please connect your MetaMask wallet before registering.");
+      return;
+    }
 
     const trimmedUsername = username.trim();
 
@@ -104,12 +182,61 @@ const RegistrationPage = () => {
       return;
     }
 
-    setSuccessMessage(
-      `Mock registration submitted as ${
-        isStaffRegistration ? "Staff" : "Student"
-      } with username "${trimmedUsername}" under ${selectedSchool}.`,
-    );
+    const selectedSchoolEnumValue = SCHOOL_ENUM_VALUES[selectedSchool];
+
+    if (selectedSchoolEnumValue === undefined) {
+      setFormError("Invalid school selected.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const tx = isStaffRegistration
+        ? await usersContract.RegisterAsStaff(
+            trimmedUsername,
+            selectedSchoolEnumValue,
+          )
+        : await usersContract.RegisterAsStudent(
+            trimmedUsername,
+            selectedSchoolEnumValue,
+          );
+
+      setSuccessMessage(
+        "Registration transaction sent. Waiting for confirmation...",
+      );
+
+      await tx.wait();
+
+      setSuccessMessage("Registration successful. Redirecting to dashboard...");
+
+      navigate("/UserDashboard");
+    } catch (error) {
+      console.error("Registration error:", error);
+      setFormError(getReadableError(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isCheckingWallet) {
+    return (
+      <main className="registration-page">
+        <section className="registration-container">
+          <div className="registration-card">
+            <div className="registration-header">
+              <p className="registration-tag">CareLink Registration</p>
+            </div>
+
+            <div className="registration-role-content">
+              <h2>Checking wallet...</h2>
+              <p>Please wait while CareLink checks your wallet status.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="registration-page">
@@ -140,11 +267,17 @@ const RegistrationPage = () => {
 
               <p>
                 {isStaffRegistration
-                  ? "Staff accounts can apply for stalls without school eligibility restrictions once registered."
+                  ? "Your wallet is whitelisted by the organiser, so you can register as staff."
                   : "Student accounts can apply for stalls only if their school is eligible."}
               </p>
             </div>
           </div>
+
+          {!isConnected && (
+            <div className="staff-warning-pill">
+              Please connect your MetaMask wallet before registering.
+            </div>
+          )}
 
           <div className="registration-field">
             <label htmlFor="username">Username</label>
@@ -156,6 +289,7 @@ const RegistrationPage = () => {
               onChange={handleUsernameChange}
               placeholder="Enter your display username"
               maxLength={32}
+              disabled={!isConnected || isSubmitting}
             />
           </div>
 
@@ -172,6 +306,7 @@ const RegistrationPage = () => {
                 }`}
                 onClick={() => setIsDropdownOpen((current) => !current)}
                 aria-expanded={isDropdownOpen}
+                disabled={!isConnected || isSubmitting}
               >
                 <span>{selectedSchoolLabel}</span>
 
@@ -195,6 +330,7 @@ const RegistrationPage = () => {
                       selectedSchool === school.value ? "selected" : ""
                     }`}
                     onClick={() => handleSchoolSelect(school.value)}
+                    disabled={isSubmitting}
                   >
                     {school.label}
                   </button>
@@ -218,9 +354,34 @@ const RegistrationPage = () => {
             </div>
           )}
 
-          <button className="registration-submit-button" type="submit">
-            {isStaffRegistration ? "Register as Staff" : "Register as Student"}
-          </button>
+          {isStaffRegistration && (
+            <div className="staff-warning-pill">
+              Your wallet has been whitelisted for staff registration.
+            </div>
+          )}
+
+          {!isConnected ? (
+            <button
+              className="registration-submit-button"
+              type="button"
+              onClick={handleConnectWallet}
+              disabled={isConnecting}
+            >
+              {isConnecting ? "Connecting..." : "Connect Wallet"}
+            </button>
+          ) : (
+            <button
+              className="registration-submit-button"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Registering..."
+                : isStaffRegistration
+                  ? "Register as Staff"
+                  : "Register as Student"}
+            </button>
+          )}
         </form>
       </section>
     </main>

@@ -1,0 +1,675 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_organiserWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_userContractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_ccnDayContractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_stallContractAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CannotPayOwnStall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPaymentAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidWallet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoWithdrawablePayments",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotAllowedToViewStallTransactions",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotApprovedStallOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotPaymentReceiver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyStallOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrganiserCannotPay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PaymentDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PaymentNotPaid",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PayToStall",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      }
+    ],
+    "name": "RefundPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "StallDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNotFromCurrentCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNotOpenForPayment",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StallNotReadyForWithdrawal",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletHasNotCreatedStall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletNotRegistered",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "PaymentID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "CustomerWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "AmountPaid",
+        "type": "uint256"
+      }
+    ],
+    "name": "PaymentCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "PaymentID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "CustomerWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "AmountRefunded",
+        "type": "uint256"
+      }
+    ],
+    "name": "PaymentRefunded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "WithdrawalID",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "Amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "WithdrawalCreated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "WithdrawStallPayments",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ccnDayContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkCCNDayForPayments",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DoesPaymentExist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetMyStallTransactionHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "PaymentID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "WithdrawalID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "CustomerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "Amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmount",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "TransactionAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum TransactionHistoryType",
+            "name": "transactionType",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct TransactionHistoryItem[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetMyWalletTransactionHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "PaymentID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "WithdrawalID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "CustomerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "Amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmount",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "TransactionAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum TransactionHistoryType",
+            "name": "transactionType",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct TransactionHistoryItem[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetMyWithdrawableBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetStallPaymentIDs",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetStallTransactionHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "PaymentID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "WithdrawalID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "CustomerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "Amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmount",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "TransactionAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum TransactionHistoryType",
+            "name": "transactionType",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct TransactionHistoryItem[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
+    "name": "HasUnsettledPaidPayments",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "Organiser",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "Payments",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "PaymentID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "CCNDayID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "CustomerWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "AmountPaid",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "PaidAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "RefundedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum PaymentStatus",
+        "name": "paymentStatus",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stallContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkStallsForPayments",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "userContract",
+    "outputs": [
+      {
+        "internalType": "contract ICareLinkUsersForPayments",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawals",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "WithdrawalID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "StallID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "CCNDayID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "StallOwnerWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "Amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "WithdrawnAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

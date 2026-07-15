@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useWeb3 } from "../context/Web3Context";
 import HeroTypewriter from "../components/HeroTypewriter";
 import SecurePayments from "../assets/SecurePayments.png";
 import TransparentRecords from "../assets/TransparentRecords.png";
@@ -9,6 +11,31 @@ import "./LandingPage.css";
 
 const LandingPage = () => {
   const [isNavbarSolid, setIsNavbarSolid] = useState(false);
+
+  const navigate = useNavigate();
+
+  const { connectWallet, isConnected, isConnecting, web3Error } = useWeb3();
+
+  const walletButtonText = isConnecting
+    ? "Connecting..."
+    : isConnected
+      ? "Login"
+      : "Connect Wallet";
+
+  const handleConnectWallet = useCallback(async () => {
+    const result = await connectWallet();
+
+    if (!result.connected) {
+      return;
+    }
+
+    if (result.isRegistered) {
+      navigate("/UserDashboard");
+      return;
+    }
+
+    navigate("/RegisterBABY");
+  }, [connectWallet, navigate]);
 
   useEffect(() => {
     const handleNavbarBackground = () => {
@@ -50,8 +77,13 @@ const LandingPage = () => {
           <a href="#features">Features</a>
         </div>
 
-        <button type="button" className="nav-button">
-          Connect Wallet
+        <button
+          type="button"
+          className="nav-button"
+          onClick={handleConnectWallet}
+          disabled={isConnecting}
+        >
+          {walletButtonText}
         </button>
       </nav>
 
@@ -69,8 +101,15 @@ const LandingPage = () => {
           </p>
 
           <div className="hero-actions">
-            <PulsatingButton>Connect Wallet</PulsatingButton>
+            <PulsatingButton
+              onClick={handleConnectWallet}
+              disabled={isConnecting}
+            >
+              {walletButtonText}
+            </PulsatingButton>
           </div>
+
+          {web3Error && <p className="wallet-error-message">{web3Error}</p>}
         </div>
 
         <CareLinkCard />

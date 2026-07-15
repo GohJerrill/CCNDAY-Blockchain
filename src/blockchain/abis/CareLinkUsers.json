@@ -1,0 +1,511 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_StaffWallet",
+        "type": "address"
+      }
+    ],
+    "name": "addStaffWallet",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyUsername",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidWallet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOrganiser",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotStudentOrCustomer",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrganiserCannotBeStaff",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrganiserCannotRegister",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_username",
+        "type": "string"
+      },
+      {
+        "internalType": "enum School",
+        "name": "_school",
+        "type": "uint8"
+      }
+    ],
+    "name": "RegisterAsStaff",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_username",
+        "type": "string"
+      },
+      {
+        "internalType": "enum School",
+        "name": "_school",
+        "type": "uint8"
+      }
+    ],
+    "name": "RegisterAsStudent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_StaffWallet",
+        "type": "address"
+      }
+    ],
+    "name": "RemoveStaffWallet",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "StaffAlreadyWhitelisted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StaffNotWhitelisted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StudentCannotSelectOthers",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_newUsername",
+        "type": "string"
+      }
+    ],
+    "name": "UpdateMyUsername",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum School",
+        "name": "_school",
+        "type": "uint8"
+      }
+    ],
+    "name": "UpgradeMyProfileToStaff",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UsernameTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WalletNotRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WhitelistedStaffMustRegisterAsStaff",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AuthenticateMyWallet",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "walletAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "username",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isAuthenticated",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isOrganiser",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRegisteredUser",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isStaffWhitelisted",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum UserType",
+        "name": "usertype",
+        "type": "uint8"
+      },
+      {
+        "internalType": "enum School",
+        "name": "school",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "registeredAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GETALLSTAFFWALLET",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetMyProfile",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "WalletAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "Username",
+            "type": "string"
+          },
+          {
+            "internalType": "enum UserType",
+            "name": "usertype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum School",
+            "name": "school",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "IsRegistered",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "RegisteredAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct UserProfile",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetOrganiserProfile",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "organiserWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isCallerOrganiser",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "GetUserProfileByWallet",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "WalletAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "Username",
+            "type": "string"
+          },
+          {
+            "internalType": "enum UserType",
+            "name": "usertype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum School",
+            "name": "school",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "IsRegistered",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "RegisteredAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct UserProfile",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "GetWalletSchool",
+    "outputs": [
+      {
+        "internalType": "enum School",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "GetWalletUserType",
+    "outputs": [
+      {
+        "internalType": "enum UserType",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "IsWalletRegistered",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_wallet",
+        "type": "address"
+      }
+    ],
+    "name": "IsWalletStaffWhitelisted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "Organiser",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "StaffWhiteList",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "StaffWhiteListArray",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "Users",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "WalletAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "Username",
+        "type": "string"
+      },
+      {
+        "internalType": "enum UserType",
+        "name": "usertype",
+        "type": "uint8"
+      },
+      {
+        "internalType": "enum School",
+        "name": "school",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "IsRegistered",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "RegisteredAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
