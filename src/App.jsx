@@ -4,6 +4,7 @@ import RegistrationPage from "./Pages/RegistrationPage";
 import Dashboard from "./Pages/Dashboard";
 import Sidebar from "./Components/Sidebar";
 import Stall from "./Pages/Stall";
+import ProfilePage from "./Pages/ProfilePage";
 import "./App.css";
 
 // Initial Commit - Set up the start of the project BABY - 2nd July
@@ -11,6 +12,7 @@ import "./App.css";
 // Completed the Mock Registration page.jsx - 4th July
 // Did the user Dashboard.jsx, preparing for backend testing and further frontend implementation - 12 July
 // Completed the main dashboard page, prearing to start on the other pages and login - 13 July
+// Completed the Profile page and the Stall page, preparing to start login and integration with Blockchain - 14 july 2026
 
 const DashboardLayout = () => {
   return (
@@ -34,6 +36,7 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/UserDashboard" element={<Dashboard />} />
           <Route path="/Stall" element={<Stall/>} />
+          <Route path="/UserProfile" element={<ProfilePage/>} />
 
           {/* Add these when the pages are ready */}
           {/* <Route path="/MyStall" element={<MyStallPage />} /> */}

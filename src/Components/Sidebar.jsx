@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 
 const DashboardIcon = () => (
@@ -53,6 +53,8 @@ const getSidebarButtonClass = ({ isActive }) =>
   isActive ? "dashboard-sidebar-button active" : "dashboard-sidebar-button";
 
 const Sidebar = () => {
+  const location = useLocation();
+  const isProfileActive = location.pathname === "/UserProfile";
   return (
     <aside className="dashboard-sidebar">
       <NavLink
@@ -86,7 +88,11 @@ const Sidebar = () => {
         <div className="dashboard-profile-navigation">
           <button
             type="button"
-            className="dashboard-sidebar-button"
+            className={
+              isProfileActive
+                ? "dashboard-sidebar-button active"
+                : "dashboard-sidebar-button"
+            }
             aria-label="Account options"
             data-tooltip="Account"
           >
@@ -98,7 +104,7 @@ const Sidebar = () => {
               Account options
             </div>
 
-            <NavLink to="/Profile" className="dashboard-profile-menu-item">
+            <NavLink to="/UserProfile" className="dashboard-profile-menu-item">
               <UserIcon />
               <span>Profile</span>
             </NavLink>
