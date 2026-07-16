@@ -1,147 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useWeb3 } from "../context/Web3Context";
+import CareLinkLoader from "../components/CareLinkLoader";
 import NoCCNDay from "../assets/NoCCNDay.svg";
 import "./Dashboard.css";
 import NoAvailableStall from "../assets/NoAvailableStall.svg";
-
-const mockStalls = [
-  {
-    StallID: 1,
-    StallName: "Temasek Bites",
-    StallDescription:
-      "Freshly prepared burgers, loaded fries, and refreshing drinks made for the perfect CCN Day meal.",
-    StallImage:
-      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80",
-    stallType: "Food & Beverages",
-    StallSchool: "IIT",
-    StallOwnerWallet: "0x45F683FAA842DA72E77A9B723E43120BA59C3A17",
-    StallLocation: "Block 21, Booth A01",
-    NeedElectricalPort: true,
-    CreatedAt: 1720454400,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 2,
-    StallName: "Pixel Play Arena",
-    StallDescription:
-      "Challenge your friends in exciting console games and compete to win attractive carnival prizes.",
-    StallImage:
-      "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=900&q=80",
-    stallType: "Games",
-    StallSchool: "Engineering",
-    StallOwnerWallet: "0xA30F5F9E94303887760C2B1D5A68F4543E91D582",
-    StallLocation: "Sports Hall, Booth B04",
-    NeedElectricalPort: true,
-    CreatedAt: 1720454500,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 3,
-    StallName: "Little Joys",
-    StallDescription:
-      "Discover handmade keychains, personalised cards, and thoughtful gifts created by TP students.",
-    StallImage:
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80",
-    stallType: "Gifts",
-    StallSchool: "Business",
-    StallOwnerWallet: "0x24CD51CE62DA8566F569261781D349A86B1F3C90",
-    StallLocation: "Library Walkway, Booth C02",
-    NeedElectricalPort: false,
-    CreatedAt: 1720454600,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 4,
-    StallName: "Second Chance Closet",
-    StallDescription:
-      "Give quality pre-owned clothes and accessories a second life while supporting sustainable fashion.",
-    StallImage:
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&q=80",
-    stallType: "Pre-owned / Recycling",
-    StallSchool: "Design",
-    StallOwnerWallet: "0x71A9C40268F039B2217D60E25F5A702ABC42D848",
-    StallLocation: "Design Walkway, Booth D03",
-    NeedElectricalPort: false,
-    CreatedAt: 1720454700,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 5,
-    StallName: "SnapSpot Studio",
-    StallDescription:
-      "Capture your CCN Day memories with themed photography, instant portraits, and creative photo props.",
-    StallImage:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=80",
-    stallType: "Services",
-    StallSchool: "Business",
-    StallOwnerWallet: "0x598A43CE21F59C040A87B258915B29811291C367",
-    StallLocation: "Plaza Entrance, Booth E01",
-    NeedElectricalPort: true,
-    CreatedAt: 1720454800,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 6,
-    StallName: "Campus Beats",
-    StallDescription:
-      "Enjoy live acoustic performances and student busking sessions throughout the afternoon.",
-    StallImage:
-      "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&w=900&q=80",
-    stallType: "Performance / Busking",
-    StallSchool: "Humanities",
-    StallOwnerWallet: "0x867BC1154A46260E240519D0F53C9A2DA86D15C4",
-    StallLocation: "Main Stage",
-    NeedElectricalPort: true,
-    CreatedAt: 1720454900,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 7,
-    StallName: "GreenLoop Crafts",
-    StallDescription:
-      "Explore creative decorations and useful items made using recycled and environmentally friendly materials.",
-    StallImage:
-      "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?auto=format&fit=crop&w=900&q=80",
-    stallType: "Others",
-    StallSchool: "Science",
-    StallOwnerWallet: "0x94C302E17BD2796184F725B49031D77C61AA65E8",
-    StallLocation: "Garden Area, Booth F06",
-    NeedElectricalPort: false,
-    CreatedAt: 1720455000,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-  {
-    StallID: 8,
-    StallName: "Sweet Cloud Bakery",
-    StallDescription:
-      "Treat yourself to freshly baked brownies, cookies, cupcakes, and other student-made desserts.",
-    StallImage:
-      "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=900&q=80",
-    stallType: "Food & Beverages",
-    StallSchool: "IIT",
-    StallOwnerWallet: "0x3B1646AD20F85AA32197203D044A96C682572C10",
-    StallLocation: "Block 21, Booth A05",
-    NeedElectricalPort: false,
-    CreatedAt: 1720455100,
-    stallStatus: "Open",
-    AllowedWithdrawal: false,
-    CCNDayID: 1,
-  },
-];
 
 const stallTypeOptions = [
   "Food & Beverages",
@@ -216,7 +78,7 @@ const mapStallFromContract = (stall) => {
     StallName: stall.StallName ?? stall[1],
     StallDescription: stall.StallDescription ?? stall[2],
     StallImage: stall.StallImage ?? stall[3],
-    stallType: stallTypeLabels[stallTypeValue] || "Others",
+    stallType: stallTypeOptions[stallTypeValue] || "Others",
     StallOwnerWallet: stall.StallOwnerWallet ?? stall[5],
     StallLocation: stall.StallLocation ?? stall[6],
     StallSchool: schoolLabels[stallSchoolValue] || "Others",
@@ -225,6 +87,22 @@ const mapStallFromContract = (stall) => {
     stallStatus: stallStatusLabels[stallStatusValue] || "Unknown",
     AllowedWithdrawal: Boolean(stall.AllowedWithdrawal ?? stall[11]),
     CCNDayID: toNumber(stall.CCNDayID ?? stall[12]),
+  };
+};
+
+const mapCCNDayFromContract = (ccnDay) => {
+  return {
+    CCNDayID: toNumber(ccnDay.CCNDayID ?? ccnDay[0]),
+    CCNName: ccnDay.CCNName ?? ccnDay[1],
+    CCNDescription: ccnDay.CCNDescription ?? ccnDay[2],
+    StartDateTime: toNumber(ccnDay.StartDateTime ?? ccnDay[3]),
+    EndDateTime: toNumber(ccnDay.EndDateTime ?? ccnDay[4]),
+    StallRegistrationStartDateTime: toNumber(
+      ccnDay.StallRegistrationStartDateTime ?? ccnDay[5],
+    ),
+    StallRegistrationEndDateTime: toNumber(
+      ccnDay.StallRegistrationEndDateTime ?? ccnDay[6],
+    ),
   };
 };
 
@@ -262,6 +140,7 @@ const Dashboard = () => {
     walletAddress,
     formattedWalletAddress,
     usersContract,
+    ccnDayContract,
     stallsContract,
     isConnected,
   } = useWeb3();
@@ -348,7 +227,7 @@ const Dashboard = () => {
   // Load CCN Day stalls
   useEffect(() => {
     const loadCurrentCCNDayStalls = async () => {
-      if (!stallsContract) {
+      if (!stallsContract || !ccnDayContract) {
         setStalls([]);
         setStallsError("");
         setStallLoadState("error");
@@ -360,6 +239,25 @@ const Dashboard = () => {
         setIsLoadingStalls(true);
         setStallsError("");
         setStallLoadState("loading");
+
+        const contractCCNDay = await ccnDayContract.GetCurrentCCNDay();
+        const mappedCCNDay = mapCCNDayFromContract(contractCCNDay);
+
+        if (!mappedCCNDay.CCNDayID) {
+          setStalls([]);
+          setStallsError("");
+          setStallLoadState("no-current-ccn-day");
+          return;
+        }
+
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        if (currentTimestamp > mappedCCNDay.EndDateTime) {
+          setStalls([]);
+          setStallsError("");
+          setStallLoadState("ccn-day-ended");
+          return;
+        }
 
         const contractStalls = await stallsContract.GetCurrentCCNDayStalls();
 
@@ -392,7 +290,7 @@ const Dashboard = () => {
     };
 
     loadCurrentCCNDayStalls();
-  }, [stallsContract]);
+  }, [stallsContract, ccnDayContract]);
 
   const filteredStalls = stalls.filter((stall) => {
     const stallName = stall.StallName.toLowerCase();
@@ -421,6 +319,7 @@ const Dashboard = () => {
     filteredStalls.length === 0;
 
   const hasNoCurrentCCNDay = stallLoadState === "no-current-ccn-day";
+  const hasCCNDayEnded = stallLoadState === "ccn-day-ended";
   const hasNoOpenStalls =
     stallLoadState === "ready" && stalls.length === 0 && !hasActiveFilters;
 
@@ -438,6 +337,11 @@ const Dashboard = () => {
     emptyStateTitle = "No current CCN Day";
     emptyStateDescription =
       "There is currently no active CCN Day, so no stalls are available yet.";
+  } else if (hasCCNDayEnded) {
+    emptyStateImage = NoCCNDay;
+    emptyStateTitle = "CCN Day has ended";
+    emptyStateDescription =
+      "There is no upcoming CCN Day, please check back another time!";
   } else if (stallLoadState === "error") {
     emptyStateTitle = "Unable to load stalls";
     emptyStateDescription = stallsError;
@@ -454,6 +358,7 @@ const Dashboard = () => {
   const shouldShowEmptyState =
     isLoadingStalls ||
     hasNoCurrentCCNDay ||
+    hasCCNDayEnded ||
     stallLoadState === "error" ||
     filteredStalls.length === 0;
 
@@ -563,9 +468,11 @@ const Dashboard = () => {
                   ? "Loading blockchain stalls..."
                   : hasNoCurrentCCNDay
                     ? "No active CCN Day"
-                    : stallLoadState === "error"
-                      ? "Unable to load stalls"
-                      : `${filteredStalls.length} of ${stalls.length} open stalls`}
+                    : hasCCNDayEnded
+                      ? "CCN Day ended"
+                      : stallLoadState === "error"
+                        ? "Unable to load stalls"
+                        : `${filteredStalls.length} of ${stalls.length} open stalls`}
               </span>
             </div>
           </div>
@@ -573,14 +480,23 @@ const Dashboard = () => {
           <div className="dashboard-stall-grid">
             {isLoadingStalls || stallsError || shouldShowEmptyState ? (
               <div className="dashboard-empty-state">
-                <img
-                  src={emptyStateImage}
-                  alt={emptyStateTitle}
-                  className="dashboard-empty-state-image"
-                />
+                {isLoadingStalls ? (
+                  <CareLinkLoader
+                    label={emptyStateTitle}
+                    sublabel={emptyStateDescription}
+                  />
+                ) : (
+                  <>
+                    <img
+                      src={emptyStateImage}
+                      alt={emptyStateTitle}
+                      className="dashboard-empty-state-image"
+                    />
 
-                <h3>{emptyStateTitle}</h3>
-                <p>{emptyStateDescription}</p>
+                    <h3>{emptyStateTitle}</h3>
+                    <p>{emptyStateDescription}</p>
+                  </>
+                )}
               </div>
             ) : (
               filteredStalls.map((stall) => (

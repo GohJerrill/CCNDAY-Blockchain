@@ -1,0 +1,270 @@
+.stall-history-page {
+  min-height: 100vh;
+  padding: 42px clamp(24px, 4vw, 54px) 90px;
+}
+
+.stall-history-header {
+  max-width: 850px;
+  margin-bottom: 34px;
+}
+
+.stall-history-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+
+  color: var(--dashboard-accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stall-history-header h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  line-height: 1.05;
+  letter-spacing: -2.5px;
+  font-weight: 700;
+}
+
+.stall-history-header p {
+  max-width: 680px;
+  margin: 16px 0 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.stall-history-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.stall-history-card {
+  min-width: 0;
+  overflow: hidden;
+
+  border-radius: 22px;
+  background: var(--dashboard-panel);
+  border: 1px solid var(--dashboard-border);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.16);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.24s ease,
+    border-color 0.24s ease,
+    background 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.stall-history-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(80, 214, 170, 0.24);
+  background: var(--dashboard-panel-hover);
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.26);
+}
+
+.stall-history-card-image-wrap {
+  position: relative;
+  height: 205px;
+  overflow: hidden;
+  background: #252530;
+}
+
+.stall-history-card-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    180deg,
+    rgba(9, 9, 14, 0.04),
+    rgba(9, 9, 14, 0.46)
+  );
+
+  pointer-events: none;
+}
+
+.stall-history-card-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+
+  transition: transform 0.45s ease;
+}
+
+.stall-history-card:hover .stall-history-card-image {
+  transform: scale(1.045);
+}
+
+.stall-history-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+
+  display: grid;
+  place-items: center;
+
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.9rem;
+  font-weight: 800;
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(80, 214, 170, 0.1),
+      transparent 28%
+    ),
+    #252530;
+}
+
+.stall-history-card-content {
+  min-height: 315px;
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.stall-history-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stall-history-card-topline span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  color: #ab91ff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stall-history-card-topline span:last-child {
+  flex: 0 0 auto;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(80, 214, 170, 0.12);
+  color: var(--dashboard-accent);
+
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.stall-history-card-content h2 {
+  margin: 16px 0 9px;
+  color: #ffffff;
+  font-size: 1.2rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.stall-history-card-content p {
+  margin: 0;
+  overflow: hidden;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.stall-history-card-details {
+  margin-top: 18px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stall-history-card-details span {
+  padding: 8px 11px;
+
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--dashboard-border);
+  color: rgba(255, 255, 255, 0.66);
+
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.stall-history-card-footer {
+  margin-top: auto;
+  padding-top: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  border-top: 1px solid var(--dashboard-border);
+}
+
+.stall-history-card-footer strong {
+  color: rgba(255, 255, 255, 0.86);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+
+.stall-history-card-footer button {
+  flex: 0 0 auto;
+
+  padding: 11px 14px;
+  border: 1px solid rgba(80, 214, 170, 0.42);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #48cda3, #5addb6);
+  color: #0e1916;
+
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  box-shadow: 0 14px 34px rgba(80, 214, 170, 0.16);
+}
+
+@media (max-width: 1450px) {
+  .stall-history-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .stall-history-page {
+    padding-inline: 22px;
+  }
+
+  .stall-history-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .stall-history-page {
+    padding-inline: 16px;
+  }
+
+  .stall-history-card-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stall-history-card-footer button {
+    width: 100%;
+  }
+}

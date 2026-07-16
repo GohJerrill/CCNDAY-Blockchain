@@ -27,12 +27,17 @@
   },
   {
     "inputs": [],
-    "name": "CannotPayOwnStall",
+    "name": "CCNDayPaymentEnded",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "CurrentCCNDayNotActive",
+    "name": "CCNDayPaymentNotStarted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotPayOwnStall",
     "type": "error"
   },
   {

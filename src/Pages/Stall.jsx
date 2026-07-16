@@ -1,80 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import CareLinkLoader from "../components/CareLinkLoader";
+import { useWeb3 } from "../context/Web3Context";
 import "./Stall.css";
 import NoCCNDay from "../assets/NoCCNDay.svg";
 import AddProduct from "../assets/AddProduct.png";
-import CCNDAYTP from "../assets/CCNDAYTP.png"
+import CCNDAYTP from "../assets/CCNDAYTP.png";
 
-const stallPageStates = {
-  NO_CCN_DAY: "noCcnDay",
-  CAN_APPLY: "canApply",
-  HAS_STALL: "hasStall",
-  CANNOT_APPLY: "cannotApply",
-};
-
-const mockCCNDay = {
-  CCNDayID: 1,
-  CCNName: "CCN Day 2026",
-  CCNDescription:
-    "A campus-wide carnival where students and staff can explore food, games, gifts, services, performances, and student-led fundraising stalls.",
-  StartDateTime: 1783942260,
-  EndDateTime: 1783942500,
-  StallRegistrationStartDateTime: 1783941840,
-  StallRegistrationEndDateTime: 1783942200,
-};
-
-const mockOwnedStall = {
-  StallID: 1,
-  StallName: "Sweet Cloud Bakery",
-  StallDescription:
-    "Treat yourself to freshly baked brownies, cookies, cupcakes, and other student-made desserts prepared specially for CCN Day.",
-  StallImage:
-    "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=1200&q=80",
-  stallType: "Food & Beverages",
-  StallOwnerWallet: "0x3B1646AD20F85AA32197203D044A96C682572C10",
-  StallLocation: "Block 21, Booth A05",
-  StallSchool: "IIT",
-  NeedElectricalPort: false,
-  CreatedAt: 1720455100,
-  stallStatus: "Open",
-  AllowedWithdrawal: false,
-  CCNDayID: 1,
-};
-
-const mockProducts = [
+const mockCurrentStallTransactions = [
   {
-    ProductID: 1,
-    StallID: 1,
-    ProductName: "Chocolate Brownie",
-    ProductDescription:
-      "Rich and fudgy chocolate brownie baked fresh with a soft centre.",
-    ProductImage:
-      "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=900&q=80",
-    ProductPrice: "5000000000000000",
-    productStatus: "Available",
+    id: "TXN-001",
+    type: "Payment",
+    wallet: "0x7A12B6c91aFe203D88bE93198c24A81A9191C2B0",
+    amount: "+0.004 ETH",
+    status: "Paid",
+    date: "Today, 10:15 AM",
   },
   {
-    ProductID: 2,
-    StallID: 1,
-    ProductName: "Vanilla Cupcake",
-    ProductDescription:
-      "Soft vanilla cupcake topped with buttercream and colourful sprinkles.",
-    ProductImage:
-      "https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&w=900&q=80",
-    ProductPrice: "7000000000000000",
-    productStatus: "Available",
+    id: "TXN-002",
+    type: "Payment",
+    wallet: "0x93BC02F8A778Ac291b63B8a122901Eb21021F8CD",
+    amount: "+0.006 ETH",
+    status: "Paid",
+    date: "Today, 11:20 AM",
   },
   {
-    ProductID: 3,
-    StallID: 1,
-    ProductName: "Cookie Pack",
-    ProductDescription:
-      "A small pack of homemade cookies suitable for sharing with friends.",
-    ProductImage:
-      "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=80",
-    ProductPrice: "4000000000000000",
-    productStatus: "Unavailable",
+    id: "TXN-003",
+    type: "Refund",
+    wallet: "0x51E88BAdD2176a812B90071EE00fB128C88BA542",
+    amount: "-0.002 ETH",
+    status: "Refunded",
+    date: "Today, 12:05 PM",
+  },
+  {
+    id: "TXN-004",
+    type: "Withdrawal",
+    wallet: "Stall Owner",
+    amount: "-0.008 ETH",
+    status: "Withdrawn",
+    date: "Today, 6:30 PM",
   },
 ];
+
+const stallPageStates = {
+  LOADING: "loading",
+  NO_CCN_DAY: "noCcnDay",
+  REGISTRATION_NOT_STARTED: "registrationNotStarted",
+  CAN_APPLY: "canApply",
+  PENDING_STALL: "pendingStall",
+  HAS_STALL: "hasStall",
+  REGISTRATION_ENDED: "registrationEnded",
+  CCN_DAY_ENDED: "ccnDayEnded",
+  CANNOT_APPLY: "cannotApply",
+};
 
 const stallTypeOptions = [
   "Food & Beverages",
@@ -85,6 +62,19 @@ const stallTypeOptions = [
   "Performance / Busking",
   "Others",
 ];
+
+const schoolLabels = [
+  "IIT",
+  "Business",
+  "Engineering",
+  "Design",
+  "Science",
+  "Humanities",
+  "Others",
+];
+
+const stallStatusLabels = ["Pending", "Open", "Closed", "Rejected"];
+const productStatusLabels = ["Available", "Unavailable"];
 
 const formatDateTime = (unixTimestamp) => {
   return new Intl.DateTimeFormat("en-SG", {
@@ -99,6 +89,155 @@ const formatDateTime = (unixTimestamp) => {
 
 const formatWalletAddress = (walletAddress) => {
   return `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`;
+};
+
+const toNumber = (value) => {
+  if (value === undefined || value === null) return 0;
+  return Number(value.toString());
+};
+
+const getBlockchainErrorMessage = (error) => {
+  return [
+    error?.reason,
+    error?.shortMessage,
+    error?.message,
+    error?.info?.error?.message,
+    error?.info?.error?.data?.message,
+  ]
+    .filter(Boolean)
+    .join(" ");
+};
+
+const getBlockchainErrorData = (error) => {
+  return [
+    error?.data,
+    error?.error?.data,
+    error?.info?.error?.data,
+    error?.info?.error?.data?.data,
+  ].find((value) => typeof value === "string" && value.startsWith("0x"));
+};
+
+const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
+  const rawMessage = getBlockchainErrorMessage(error);
+  const errorData = getBlockchainErrorData(error);
+
+  if (
+    rawMessage.includes("user rejected") ||
+    rawMessage.includes("User rejected") ||
+    rawMessage.includes("ACTION_REJECTED") ||
+    rawMessage.includes("denied transaction signature")
+  ) {
+    return "Transaction was cancelled in MetaMask.";
+  }
+
+  if (
+    rawMessage.includes("CannotDeleteStallDuringCCNDay") ||
+    rawMessage.includes("0x08027567") ||
+    errorData === "0x08027567"
+  ) {
+    return "This stall cannot be deleted while CCN Day is ongoing.";
+  }
+
+  if (rawMessage.includes("StallHasUnsettledPaidPayments")) {
+    return "This stall cannot be deleted because it still has unsettled paid payments.";
+  }
+
+  if (rawMessage.includes("OnlyOpenOrClosedCanBeDeleted")) {
+    return "Only approved open or closed stalls can be deleted.";
+  }
+
+  if (rawMessage.includes("OnlyOpenOrClosedCanBeUpdated")) {
+    return "Only approved open or closed stalls can update their status.";
+  }
+
+  if (rawMessage.includes("OwnerCanOnlySetOpenOrClosed")) {
+    return "You can only set your stall status to Open or Closed.";
+  }
+
+  if (rawMessage.includes("OnlyStallOwner")) {
+    return "Only the stall owner can perform this action.";
+  }
+
+  if (rawMessage.includes("NotApprovedStallOwner")) {
+    return "Your stall must be approved before you can perform this action.";
+  }
+
+  if (
+    rawMessage.includes("execution reverted (unknown custom error)") ||
+    rawMessage.includes("CALL_EXCEPTION")
+  ) {
+    return fallbackMessage;
+  }
+
+  return rawMessage || fallbackMessage;
+};
+
+const getBlockchainErrorType = (error) => {
+  const message = getBlockchainErrorMessage(error);
+
+  if (message.includes("NoCurrentCCNDay")) return "no-current-ccn-day";
+  if (message.includes("WalletHasNotCreatedStall"))
+    return "wallet-has-not-created-stall";
+  if (message.includes("StallRegistrationNotOpen"))
+    return "stall-registration-not-open";
+  if (message.includes("WalletAlreadyCreatedStall"))
+    return "wallet-already-created-stall";
+  if (message.includes("SchoolNotEligible")) return "school-not-eligible";
+  if (message.includes("WalletNotRegistered")) return "wallet-not-registered";
+
+  return "unknown-error";
+};
+
+const mapCCNDayFromContract = (ccnDay) => {
+  return {
+    CCNDayID: toNumber(ccnDay.CCNDayID ?? ccnDay[0]),
+    CCNName: ccnDay.CCNName ?? ccnDay[1],
+    CCNDescription: ccnDay.CCNDescription ?? ccnDay[2],
+    StartDateTime: toNumber(ccnDay.StartDateTime ?? ccnDay[3]),
+    EndDateTime: toNumber(ccnDay.EndDateTime ?? ccnDay[4]),
+    StallRegistrationStartDateTime: toNumber(
+      ccnDay.StallRegistrationStartDateTime ?? ccnDay[5],
+    ),
+    StallRegistrationEndDateTime: toNumber(
+      ccnDay.StallRegistrationEndDateTime ?? ccnDay[6],
+    ),
+  };
+};
+
+const mapStallFromContract = (stall) => {
+  const stallTypeValue = toNumber(stall.stallType ?? stall[4]);
+  const stallSchoolValue = toNumber(stall.StallSchool ?? stall[7]);
+  const stallStatusValue = toNumber(stall.stallStatus ?? stall[10]);
+
+  return {
+    StallID: toNumber(stall.StallID ?? stall[0]),
+    StallName: stall.StallName ?? stall[1],
+    StallDescription: stall.StallDescription ?? stall[2],
+    StallImage: stall.StallImage ?? stall[3],
+    stallType: stallTypeOptions[stallTypeValue] || "Others",
+    StallOwnerWallet: stall.StallOwnerWallet ?? stall[5],
+    StallLocation: stall.StallLocation ?? stall[6],
+    StallSchool: schoolLabels[stallSchoolValue] || "Others",
+    NeedElectricalPort: Boolean(stall.NeedElectricalPort ?? stall[8]),
+    CreatedAt: toNumber(stall.CreatedAt ?? stall[9]),
+    stallStatus: stallStatusLabels[stallStatusValue] || "Unknown",
+    AllowedWithdrawal: Boolean(stall.AllowedWithdrawal ?? stall[11]),
+    CCNDayID: toNumber(stall.CCNDayID ?? stall[12]),
+  };
+};
+
+const mapProductFromContract = (product) => {
+  const productStatusValue = toNumber(product.productStatus ?? product[6]);
+
+  return {
+    ProductID: toNumber(product.ProductID ?? product[0]),
+    StallID: toNumber(product.StallID ?? product[1]),
+    ProductName: product.ProductName ?? product[2],
+    ProductDescription: product.ProductDescription ?? product[3],
+    ProductImage: product.ProductImage ?? product[4],
+    ProductPrice: (product.ProductPrice ?? product[5]).toString(),
+    productStatus: productStatusLabels[productStatusValue] || "Unavailable",
+  };
 };
 
 // const handleSubmitStallApplication = (event) => {
@@ -116,10 +255,37 @@ const formatWeiToEth = (weiValue) => {
   return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
 };
 
+const normaliseWeiInput = (weiValue) => {
+  const cleanedValue = weiValue.trim();
+
+  if (!/^\d+$/.test(cleanedValue)) {
+    throw new Error("Product price must be a whole number in wei.");
+  }
+
+  if (BigInt(cleanedValue) <= 0n) {
+    throw new Error("Product price must be more than 0 wei.");
+  }
+
+  return cleanedValue;
+};
+
 const Stall = () => {
-  const [stallPageState, setStallPageState] = useState(
-    stallPageStates.CAN_APPLY,
-  );
+  const {
+    walletAddress,
+    usersContract,
+    ccnDayContract,
+    stallsContract,
+    paymentsContract,
+    isConnected,
+  } = useWeb3();
+
+  const [stallPageState, setStallPageState] = useState(stallPageStates.LOADING);
+
+  const [currentCCNDay, setCurrentCCNDay] = useState(null);
+  const [pageMessage, setPageMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeStallTab, setActiveStallTab] = useState("products");
 
   const [stallForm, setStallForm] = useState({
     StallName: "",
@@ -129,16 +295,14 @@ const Stall = () => {
     NeedElectricalPort: false,
   });
 
-  const [ownedStall, setOwnedStall] = useState(mockOwnedStall);
-  const [products, setProducts] = useState(mockProducts);
+  const [ownedStall, setOwnedStall] = useState(null);
+  const [products, setProducts] = useState([]);
 
   const [activeModal, setActiveModal] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [stallStatusForm, setStallStatusForm] = useState(
-    mockOwnedStall.stallStatus,
-  );
+  const [stallStatusForm, setStallStatusForm] = useState("Open");
 
   const [productForm, setProductForm] = useState({
     ProductName: "",
@@ -147,6 +311,250 @@ const Stall = () => {
     ProductPrice: "",
     productStatus: "Available",
   });
+  const [canWithdrawStallPayments, setCanWithdrawStallPayments] =
+    useState(false);
+  const [withdrawableBalance, setWithdrawableBalance] = useState("0");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+
+  const [isUpdatingStall, setIsUpdatingStall] = useState(false);
+  const [isDeletingStall, setIsDeletingStall] = useState(false);
+
+  const [transactionModalStatus, setTransactionModalStatus] =
+    useState("success");
+  const [modalErrorMessage, setModalErrorMessage] = useState("");
+
+  useEffect(() => {
+    const loadStallPageData = async () => {
+      if (
+        !isConnected ||
+        !walletAddress ||
+        !usersContract ||
+        !ccnDayContract ||
+        !stallsContract
+      ) {
+        setStallPageState(stallPageStates.LOADING);
+        return;
+      }
+
+      try {
+        setPageMessage("");
+        setStallPageState(stallPageStates.LOADING);
+
+        const contractCCNDay = await ccnDayContract.GetCurrentCCNDay();
+        const mappedCCNDay = mapCCNDayFromContract(contractCCNDay);
+
+        if (!mappedCCNDay.CCNDayID) {
+          setCurrentCCNDay(null);
+          setOwnedStall(null);
+          setProducts([]);
+          setWithdrawableBalance("0");
+          setCanWithdrawStallPayments(false);
+          setStallPageState(stallPageStates.NO_CCN_DAY);
+          return;
+        }
+
+        setCurrentCCNDay(mappedCCNDay);
+
+        let mappedOwnedStall = null;
+
+        try {
+          const contractOwnedStall = await stallsContract.GetMyStall();
+          mappedOwnedStall = mapStallFromContract(contractOwnedStall);
+        } catch (error) {
+          const errorType = getBlockchainErrorType(error);
+
+          if (errorType !== "wallet-has-not-created-stall") {
+            throw error;
+          }
+        }
+
+        if (mappedOwnedStall) {
+          setOwnedStall(mappedOwnedStall);
+          setStallStatusForm(
+            mappedOwnedStall.stallStatus === "Closed" ? "Closed" : "Open",
+          );
+
+          let withdrawableAmount = 0n;
+
+          if (paymentsContract) {
+            withdrawableAmount =
+              await paymentsContract.GetMyWithdrawableBalance();
+          }
+
+          const withdrawableAmountBigInt = BigInt(
+            withdrawableAmount.toString(),
+          );
+
+          setWithdrawableBalance(withdrawableAmountBigInt.toString());
+          setCanWithdrawStallPayments(
+            mappedOwnedStall.AllowedWithdrawal && withdrawableAmountBigInt > 0n,
+          );
+
+          try {
+            const productIds = await stallsContract.GetProductIDsByStallID(
+              mappedOwnedStall.StallID,
+            );
+
+            const mappedProducts = await Promise.all(
+              productIds.map(async (productId) => {
+                const contractProduct =
+                  await stallsContract.Products(productId);
+                return mapProductFromContract(contractProduct);
+              }),
+            );
+
+            setProducts(mappedProducts);
+          } catch (error) {
+            console.error("Product load error:", error);
+            setProducts([]);
+          }
+
+          if (mappedOwnedStall.stallStatus === "Pending") {
+            setStallPageState(stallPageStates.PENDING_STALL);
+            return;
+          }
+
+          setStallPageState(stallPageStates.HAS_STALL);
+          return;
+        }
+
+        setOwnedStall(null);
+        setProducts([]);
+        setWithdrawableBalance("0");
+        setCanWithdrawStallPayments(false);
+
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        if (currentTimestamp > mappedCCNDay.EndDateTime) {
+          setPageMessage(
+            "There is no CCN Day upcoming, please apply again another time.",
+          );
+          setStallPageState(stallPageStates.CCN_DAY_ENDED);
+          return;
+        }
+
+        if (currentTimestamp < mappedCCNDay.StallRegistrationStartDateTime) {
+          setPageMessage(
+            "Stall registration has not opened yet. Please come back when applications begin.",
+          );
+          setStallPageState(stallPageStates.REGISTRATION_NOT_STARTED);
+          return;
+        }
+
+        if (currentTimestamp > mappedCCNDay.StallRegistrationEndDateTime) {
+          setPageMessage(
+            "Stall registration has ended for this CCN Day. New stall applications are no longer accepted.",
+          );
+          setStallPageState(stallPageStates.REGISTRATION_ENDED);
+          return;
+        }
+
+        const canApply =
+          await stallsContract.CanWalletCreateStall(walletAddress);
+
+        if (canApply) {
+          setStallPageState(stallPageStates.CAN_APPLY);
+          return;
+        }
+
+        setPageMessage(
+          "Your wallet is not eligible to create a stall for this CCN Day.",
+        );
+        setStallPageState(stallPageStates.CANNOT_APPLY);
+      } catch (error) {
+        console.error("Stall page load error:", error);
+
+        const errorType = getBlockchainErrorType(error);
+
+        if (errorType === "no-current-ccn-day") {
+          setCurrentCCNDay(null);
+          setOwnedStall(null);
+          setProducts([]);
+          setStallPageState(stallPageStates.NO_CCN_DAY);
+          return;
+        }
+
+        setPageMessage(
+          "Unable to load your stall page from the blockchain. Please try again.",
+        );
+        setStallPageState(stallPageStates.CANNOT_APPLY);
+      }
+    };
+
+    loadStallPageData();
+  }, [
+    isConnected,
+    walletAddress,
+    usersContract,
+    ccnDayContract,
+    stallsContract,
+    paymentsContract,
+    refreshKey,
+  ]);
+
+  const displayedCCNDay = currentCCNDay;
+
+  const refreshStallPage = () => {
+    setRefreshKey((currentKey) => currentKey + 1);
+  };
+
+  const showSuccessModal = (message) => {
+    setTransactionModalStatus("success");
+    setSuccessMessage(message);
+    setModalErrorMessage("");
+    setActiveModal("success");
+  };
+
+  const showErrorModal = (message, errorMessage) => {
+    setTransactionModalStatus("error");
+    setSuccessMessage(message);
+    setModalErrorMessage(errorMessage);
+    setActiveModal("success");
+  };
+
+  const renderCCNDayHero = () => (
+    <section className="stall-event-hero">
+      <div className="stall-event-image-wrapper">
+        <img src={CCNDAYTP} alt={displayedCCNDay.CCNName} />
+      </div>
+
+      <div className="stall-event-content">
+        <span className="stall-section-eyebrow">CCN Day</span>
+
+        <h1>{displayedCCNDay.CCNName}</h1>
+
+        <p>{displayedCCNDay.CCNDescription}</p>
+
+        <div className="stall-event-date-grid">
+          <div>
+            <span>CCN starts</span>
+            <strong>{formatDateTime(displayedCCNDay.StartDateTime)}</strong>
+          </div>
+
+          <div>
+            <span>CCN ends</span>
+            <strong>{formatDateTime(displayedCCNDay.EndDateTime)}</strong>
+          </div>
+
+          <div>
+            <span>Registration opens</span>
+            <strong>
+              {formatDateTime(displayedCCNDay.StallRegistrationStartDateTime)}
+            </strong>
+          </div>
+
+          <div>
+            <span>Registration closes</span>
+            <strong>
+              {formatDateTime(displayedCCNDay.StallRegistrationEndDateTime)}
+            </strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
@@ -166,18 +574,106 @@ const Stall = () => {
     }));
   };
 
-  const handleSubmitStallApplication = (event) => {
+  const handleSubmitStallApplication = async (event) => {
     event.preventDefault();
-    console.log("Mock stall application submitted:", stallForm);
-  };
 
-  const handleWithdrawStallPayments = () => {
-    console.log("Mock withdraw stall payments clicked");
+    if (!stallsContract) {
+      showErrorModal(
+        "Unable to submit stall application.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const stallTypeValue = stallTypeOptions.indexOf(stallForm.stallType);
+
+      const tx = await stallsContract.CreateStall(
+        stallForm.StallName.trim(),
+        stallForm.StallDescription.trim(),
+        stallForm.StallImage.trim(),
+        stallTypeValue,
+        stallForm.NeedElectricalPort,
+      );
+
+      await tx.wait();
+
+      setStallForm({
+        StallName: "",
+        StallDescription: "",
+        StallImage: "",
+        stallType: "Food & Beverages",
+        NeedElectricalPort: false,
+      });
+
+      showSuccessModal(
+        "Stall application has been submitted successfully. It is now pending organiser approval.",
+      );
+      refreshStallPage();
+    } catch (error) {
+      console.error("Create stall error:", error);
+      showErrorModal(
+        "Unable to submit stall application.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to submit stall application. Please try again.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const handleWithdrawStallPayments = async () => {
+    if (!paymentsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to withdraw.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    try {
+      setIsWithdrawing(true);
+
+      const tx = await paymentsContract.WithdrawStallPayments(
+        ownedStall.StallID,
+      );
+
+      await tx.wait();
+
+      showSuccessModal("Stall payments have been withdrawn successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Withdraw stall payments error:", error);
+
+      showErrorModal(
+        "Unable to withdraw.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to withdraw stall payments. Please try again.",
+        ),
+      );
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   const closeModal = () => {
+    if (
+      isSavingProduct ||
+      isDeletingProduct ||
+      isUpdatingStall ||
+      isDeletingStall ||
+      isWithdrawing
+    ) {
+      return;
+    }
+
     setActiveModal(null);
     setSelectedProduct(null);
+    setModalErrorMessage("");
   };
 
   const openEditStallModal = () => {
@@ -189,26 +685,82 @@ const Stall = () => {
     setActiveModal("deleteStall");
   };
 
-  const handleUpdateStallStatus = (event) => {
+  const handleUpdateStallStatus = async (event) => {
     event.preventDefault();
 
-    setOwnedStall((currentStall) => ({
-      ...currentStall,
-      stallStatus: stallStatusForm,
-    }));
+    if (!stallsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to update stall status.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
 
-    setActiveModal("success");
-    setSuccessMessage("Stall status has been updated successfully.");
+    if (stallStatusForm === ownedStall.stallStatus) {
+      closeModal();
+      return;
+    }
+
+    try {
+      setIsUpdatingStall(true);
+
+      const stallStatusValue = stallStatusLabels.indexOf(stallStatusForm);
+
+      const tx = await stallsContract.UpdateMyStallOpenStatus(
+        ownedStall.StallID,
+        stallStatusValue,
+      );
+
+      await tx.wait();
+
+      showSuccessModal("Stall status has been updated successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Update stall status error:", error);
+
+      showErrorModal(
+        "Unable to update stall status.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "The stall status could not be updated. Please try again.",
+        ),
+      );
+    } finally {
+      setIsUpdatingStall(false);
+    }
   };
 
-  const handleConfirmDeleteStall = () => {
-    setActiveModal("success");
-    setSuccessMessage("Stall has been deleted successfully.");
+  const handleConfirmDeleteStall = async () => {
+    if (!stallsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to delete stall.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
 
-    setTimeout(() => {
-      setStallPageState(stallPageStates.CAN_APPLY);
-      closeModal();
-    }, 900);
+    try {
+      setIsDeletingStall(true);
+
+      const tx = await stallsContract.DeleteMyStall(ownedStall.StallID);
+
+      await tx.wait();
+
+      showSuccessModal("Stall has been deleted successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Delete stall error:", error);
+
+      showErrorModal(
+        "Unable to delete stall.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "The stall could not be deleted. Please try again.",
+        ),
+      );
+    } finally {
+      setIsDeletingStall(false);
+    }
   };
 
   const openEditProductModal = (product) => {
@@ -253,106 +805,171 @@ const Stall = () => {
     }));
   };
 
-  const handleUpdateProduct = (event) => {
+  const handleUpdateProduct = async (event) => {
     event.preventDefault();
 
-    setProducts((currentProducts) =>
-      currentProducts.map((product) =>
-        product.ProductID === selectedProduct.ProductID
-          ? {
-              ...product,
-              ProductName: productForm.ProductName,
-              ProductDescription: productForm.ProductDescription,
-              ProductImage: productForm.ProductImage,
-              ProductPrice: productForm.ProductPrice,
-            }
-          : product,
-      ),
-    );
+    if (!stallsContract || !selectedProduct) {
+      showErrorModal(
+        "Unable to update product.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
 
-    setActiveModal("success");
-    setSuccessMessage("Product has been updated successfully.");
+    if (isEditProductUnchanged) {
+      closeModal();
+      return;
+    }
+
+    try {
+      setIsSavingProduct(true);
+
+      const productPriceInWei = normaliseWeiInput(productForm.ProductPrice);
+      const productStatusValue = productStatusLabels.indexOf(
+        productForm.productStatus,
+      );
+
+      const tx = await stallsContract.EditProduct(
+        selectedProduct.ProductID,
+        productForm.ProductName.trim(),
+        productForm.ProductDescription.trim(),
+        productForm.ProductImage.trim(),
+        productPriceInWei,
+        productStatusValue,
+      );
+
+      await tx.wait();
+
+      showSuccessModal("Product has been updated successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Edit product error:", error);
+
+      showErrorModal(
+        "Unable to update product.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          error?.message || "Unable to update product. Please try again.",
+        ),
+      );
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
-  const handleCreateProduct = (event) => {
+  const handleCreateProduct = async (event) => {
     event.preventDefault();
 
-    const nextProductId =
-      products.length === 0
-        ? 1
-        : Math.max(...products.map((product) => product.ProductID)) + 1;
+    if (!stallsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to create product.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
 
-    const newProduct = {
-      ProductID: nextProductId,
-      StallID: ownedStall.StallID,
-      ProductName: productForm.ProductName,
-      ProductDescription: productForm.ProductDescription,
-      ProductImage: productForm.ProductImage,
-      ProductPrice: productForm.ProductPrice,
-      productStatus: "Available",
-    };
+    try {
+      setIsSavingProduct(true);
 
-    setProducts((currentProducts) => [...currentProducts, newProduct]);
+      const productPriceInWei = normaliseWeiInput(productForm.ProductPrice);
+      const productStatusValue = productStatusLabels.indexOf(
+        productForm.productStatus,
+      );
 
-    setActiveModal("success");
-    setSuccessMessage("Product has been created successfully.");
+      const tx = await stallsContract.CreateProduct(
+        ownedStall.StallID,
+        productForm.ProductName.trim(),
+        productForm.ProductDescription.trim(),
+        productForm.ProductImage.trim(),
+        productPriceInWei,
+        productStatusValue,
+      );
+
+      await tx.wait();
+
+      setProductForm({
+        ProductName: "",
+        ProductDescription: "",
+        ProductImage: "",
+        ProductPrice: "",
+        productStatus: "Available",
+      });
+
+      showSuccessModal("Product has been created successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Create product error:", error);
+
+      showErrorModal(
+        "Unable to create product.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          error?.message || "Unable to create product. Please try again.",
+        ),
+      );
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
-  const handleConfirmDeleteProduct = () => {
-    setProducts((currentProducts) =>
-      currentProducts.filter(
-        (product) => product.ProductID !== selectedProduct.ProductID,
-      ),
-    );
+  const handleConfirmDeleteProduct = async () => {
+    if (!stallsContract || !selectedProduct) {
+      showErrorModal(
+        "Unable to delete product.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
 
-    setActiveModal("success");
-    setSuccessMessage("Product has been deleted successfully.");
+    try {
+      setIsDeletingProduct(true);
+
+      const tx = await stallsContract.DeleteProduct(selectedProduct.ProductID);
+
+      await tx.wait();
+
+      showSuccessModal("Product has been deleted successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Delete product error:", error);
+
+      showErrorModal(
+        "Unable to delete product.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to delete product. Please try again.",
+        ),
+      );
+    } finally {
+      setIsDeletingProduct(false);
+    }
   };
+
+  const isProductActionInProgress = isSavingProduct || isDeletingProduct;
+  const isStallActionInProgress = isUpdatingStall || isDeletingStall;
+
+  const isStallStatusUnchanged =
+    ownedStall && stallStatusForm === ownedStall.stallStatus;
+
+  const isEditProductUnchanged =
+    selectedProduct &&
+    productForm.ProductName.trim() === selectedProduct.ProductName &&
+    productForm.ProductDescription.trim() ===
+      selectedProduct.ProductDescription &&
+    productForm.ProductImage.trim() === selectedProduct.ProductImage &&
+    productForm.ProductPrice.trim() === selectedProduct.ProductPrice &&
+    productForm.productStatus === selectedProduct.productStatus;
 
   return (
     <div className="stall-page">
-      <div className="stall-mock-switcher">
-        <button
-          type="button"
-          className={
-            stallPageState === stallPageStates.NO_CCN_DAY ? "active" : ""
-          }
-          onClick={() => setStallPageState(stallPageStates.NO_CCN_DAY)}
-        >
-          No CCN Day
-        </button>
-
-        <button
-          type="button"
-          className={
-            stallPageState === stallPageStates.CAN_APPLY ? "active" : ""
-          }
-          onClick={() => setStallPageState(stallPageStates.CAN_APPLY)}
-        >
-          Apply View
-        </button>
-
-        <button
-          type="button"
-          className={
-            stallPageState === stallPageStates.CANNOT_APPLY ? "active" : ""
-          }
-          onClick={() => setStallPageState(stallPageStates.CANNOT_APPLY)}
-        >
-          Staff Not Whitelisted
-        </button>
-
-        <button
-          type="button"
-          className={
-            stallPageState === stallPageStates.HAS_STALL ? "active" : ""
-          }
-          onClick={() => setStallPageState(stallPageStates.HAS_STALL)}
-        >
-          My Stall View
-        </button>
-      </div>
-
+      {stallPageState === stallPageStates.LOADING && (
+        <section className="stall-centered-state">
+          <CareLinkLoader
+            label="Loading stall page..."
+            sublabel="Please wait while CareLink checks your wallet and CCN Day status."
+          />
+        </section>
+      )}
       {stallPageState === stallPageStates.NO_CCN_DAY && (
         <section className="stall-centered-state">
           <img src={NoCCNDay} alt="" className="stall-centered-state-image" />
@@ -368,45 +985,7 @@ const Stall = () => {
 
       {stallPageState === stallPageStates.CANNOT_APPLY && (
         <>
-          <section className="stall-event-hero">
-            <div className="stall-event-image-wrapper">
-              <img src={CCNDAYTP} alt="BRUH"/>
-            </div>
-
-            <div className="stall-event-content">
-              <span className="stall-section-eyebrow">Active CCN Day</span>
-
-              <h1>{mockCCNDay.CCNName}</h1>
-
-              <p>{mockCCNDay.CCNDescription}</p>
-
-              <div className="stall-event-date-grid">
-                <div>
-                  <span>CCN starts</span>
-                  <strong>{formatDateTime(mockCCNDay.StartDateTime)}</strong>
-                </div>
-
-                <div>
-                  <span>CCN ends</span>
-                  <strong>{formatDateTime(mockCCNDay.EndDateTime)}</strong>
-                </div>
-
-                <div>
-                  <span>Registration opens</span>
-                  <strong>
-                    {formatDateTime(mockCCNDay.StallRegistrationStartDateTime)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Registration closes</span>
-                  <strong>
-                    {formatDateTime(mockCCNDay.StallRegistrationEndDateTime)}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </section>
+          {renderCCNDayHero()}
 
           <section className="stall-restriction-card">
             <img
@@ -417,10 +996,109 @@ const Stall = () => {
             <h2>You are unable to create a stall application</h2>
 
             <p>
-              A CCN Day is currently active, but staff accounts must be
-              whitelisted by the organiser before they can register a stall.
-              Please contact the organiser if you believe you should have
-              access.
+              {pageMessage ||
+                "You are unable to create a stall application for this CCN Day. Please contact the organiser if you believe you should have access."}
+            </p>
+          </section>
+        </>
+      )}
+
+      {stallPageState === stallPageStates.REGISTRATION_NOT_STARTED && (
+        <>
+          {renderCCNDayHero()}
+
+          <section className="stall-restriction-card">
+            <img className="stall-centered-state-image" src={NoCCNDay} alt="" />
+
+            <h2>Stall registration has not started</h2>
+
+            <p>{pageMessage}</p>
+          </section>
+        </>
+      )}
+
+      {stallPageState === stallPageStates.REGISTRATION_ENDED && (
+        <>
+          {renderCCNDayHero()}
+
+          <section className="stall-restriction-card">
+            <img className="stall-centered-state-image" src={NoCCNDay} alt="" />
+
+            <h2>Stall registration has ended</h2>
+
+            <p>{pageMessage}</p>
+          </section>
+        </>
+      )}
+
+      {stallPageState === stallPageStates.CCN_DAY_ENDED && (
+        <>
+          {renderCCNDayHero()}
+
+          <section className="stall-restriction-card">
+            <img className="stall-centered-state-image" src={NoCCNDay} alt="" />
+
+            <h2>CCN Day has ended</h2>
+
+            <p>{pageMessage}</p>
+          </section>
+        </>
+      )}
+
+      {stallPageState === stallPageStates.PENDING_STALL && ownedStall && (
+        <>
+          {renderCCNDayHero()}
+
+          <section className="stall-owned-card">
+            <div className="stall-owned-image-wrapper">
+              <img src={ownedStall.StallImage} alt={ownedStall.StallName} />
+            </div>
+
+            <div className="stall-owned-content">
+              <div className="stall-owned-pills">
+                <span>{ownedStall.stallType}</span>
+                <span>{ownedStall.StallSchool}</span>
+                <span>{ownedStall.stallStatus}</span>
+              </div>
+
+              <h2>{ownedStall.StallName}</h2>
+
+              <p>{ownedStall.StallDescription}</p>
+
+              <div className="stall-owned-meta-grid">
+                <div>
+                  <span>Location</span>
+                  <strong>Pending organiser assignment</strong>
+                </div>
+
+                <div>
+                  <span>Electrical port</span>
+                  <strong>
+                    {ownedStall.NeedElectricalPort ? "Needed" : "Not needed"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Owner wallet</span>
+                  <strong title={ownedStall.StallOwnerWallet}>
+                    {formatWalletAddress(ownedStall.StallOwnerWallet)}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Approval status</span>
+                  <strong>Pending approval</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="stall-restriction-card">
+            <h2>Your stall application is pending</h2>
+
+            <p>
+              Your stall has been submitted successfully. Products and payments
+              will be available after the organiser approves your stall.
             </p>
           </section>
         </>
@@ -428,45 +1106,7 @@ const Stall = () => {
 
       {stallPageState === stallPageStates.CAN_APPLY && (
         <>
-          <section className="stall-event-hero">
-            <div className="stall-event-image-wrapper">
-              <img src={CCNDAYTP} alt={mockCCNDay.CCNName} />
-            </div>
-
-            <div className="stall-event-content">
-              <span className="stall-section-eyebrow">Active CCN Day</span>
-
-              <h1>{mockCCNDay.CCNName}</h1>
-
-              <p>{mockCCNDay.CCNDescription}</p>
-
-              <div className="stall-event-date-grid">
-                <div>
-                  <span>CCN starts</span>
-                  <strong>{formatDateTime(mockCCNDay.StartDateTime)}</strong>
-                </div>
-
-                <div>
-                  <span>CCN ends</span>
-                  <strong>{formatDateTime(mockCCNDay.EndDateTime)}</strong>
-                </div>
-
-                <div>
-                  <span>Registration opens</span>
-                  <strong>
-                    {formatDateTime(mockCCNDay.StallRegistrationStartDateTime)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Registration closes</span>
-                  <strong>
-                    {formatDateTime(mockCCNDay.StallRegistrationEndDateTime)}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </section>
+          {renderCCNDayHero()}
 
           <section className="stall-application-card">
             <div className="stall-section-heading">
@@ -544,14 +1184,16 @@ const Stall = () => {
               </label>
 
               <div className="stall-form-actions">
-                <button type="submit">Submit stall application</button>
+                <button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting..." : "Submit stall application"}
+                </button>
               </div>
             </form>
           </section>
         </>
       )}
 
-      {stallPageState === stallPageStates.HAS_STALL && (
+      {stallPageState === stallPageStates.HAS_STALL && ownedStall && (
         <>
           <div className="stall-owner-action-bar">
             <div>
@@ -559,26 +1201,32 @@ const Stall = () => {
             </div>
 
             <div className="stall-owner-actions">
-              <button
-                type="button"
-                className="stall-primary-button"
-                onClick={handleWithdrawStallPayments}
-              >
-                Withdraw
-              </button>
+              {canWithdrawStallPayments && (
+                <button
+                  type="button"
+                  className="stall-primary-button"
+                  onClick={handleWithdrawStallPayments}
+                  disabled={isWithdrawing}
+                  title={`Withdrawable balance: ${formatWeiToEth(withdrawableBalance)}`}
+                >
+                  {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                </button>
+              )}
 
               <button
                 type="button"
                 className="stall-secondary-button"
                 onClick={openEditStallModal}
+                disabled={isStallActionInProgress}
               >
-                Edit stall
+                Update Stall Status
               </button>
 
               <button
                 type="button"
                 className="stall-danger-button"
                 onClick={openDeleteStallModal}
+                disabled={isStallActionInProgress}
               >
                 Delete stall
               </button>
@@ -632,65 +1280,137 @@ const Stall = () => {
           <section className="stall-products-section">
             <div className="stall-products-heading">
               <div>
-                <span className="stall-section-eyebrow">Products</span>
-                <h2>Stall products</h2>
+                <span className="stall-section-eyebrow">
+                  {activeStallTab === "products" ? "Products" : "Transactions"}
+                </span>
+
+                <h2>
+                  {activeStallTab === "products"
+                    ? "Stall products"
+                    : "Stall transactions"}
+                </h2>
               </div>
 
-              <span>{products.length} products</span>
+              <span>
+                {activeStallTab === "products"
+                  ? `${products.length} products`
+                  : `${mockCurrentStallTransactions.length} transactions`}
+              </span>
             </div>
 
-            <div className="stall-product-grid">
-              {products.map((product) => (
-                <article className="stall-product-card" key={product.ProductID}>
-                  <div className="stall-product-image-wrapper">
-                    <img
-                      src={product.ProductImage}
-                      alt={product.ProductName}
-                      loading="lazy"
-                    />
+            <div className="stall-tab-toggle">
+              <button
+                type="button"
+                className={activeStallTab === "products" ? "active" : ""}
+                onClick={() => setActiveStallTab("products")}
+              >
+                Products
+              </button>
 
-                    <div className="stall-product-card-actions">
-                      <button
-                        type="button"
-                        className="stall-product-edit-button"
-                        onClick={() => openEditProductModal(product)}
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        className="stall-product-delete-button"
-                        onClick={() => openDeleteProductModal(product)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="stall-product-content">
-                    <div className="stall-product-status-row">
-                      <span>{product.productStatus}</span>
-                      <strong>{formatWeiToEth(product.ProductPrice)}</strong>
-                    </div>
-
-                    <h3>{product.ProductName}</h3>
-
-                    <p>{product.ProductDescription}</p>
-                  </div>
-                </article>
-              ))}
+              <button
+                type="button"
+                className={activeStallTab === "transactions" ? "active" : ""}
+                onClick={() => setActiveStallTab("transactions")}
+              >
+                Transactions
+              </button>
             </div>
+
+            {activeStallTab === "products" ? (
+              <div className="stall-product-grid">
+                {products.map((product) => (
+                  <article
+                    className="stall-product-card"
+                    key={product.ProductID}
+                  >
+                    <div className="stall-product-image-wrapper">
+                      <img
+                        src={product.ProductImage}
+                        alt={product.ProductName}
+                        loading="lazy"
+                      />
+
+                      <div className="stall-product-card-actions">
+                        <button
+                          type="button"
+                          className="stall-product-edit-button"
+                          onClick={() => openEditProductModal(product)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          className="stall-product-delete-button"
+                          onClick={() => openDeleteProductModal(product)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="stall-product-content">
+                      <div className="stall-product-status-row">
+                        <span>{product.productStatus}</span>
+                        <strong>{formatWeiToEth(product.ProductPrice)}</strong>
+                      </div>
+
+                      <h3>{product.ProductName}</h3>
+
+                      <p>{product.ProductDescription}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="stall-transaction-table-wrap">
+                <table className="stall-transaction-table">
+                  <thead>
+                    <tr>
+                      <th>Transaction ID</th>
+                      <th>Type</th>
+                      <th>Wallet</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {mockCurrentStallTransactions.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td>{transaction.id}</td>
+                        <td>{transaction.type}</td>
+                        <td title={transaction.wallet}>
+                          {transaction.wallet === "Stall Owner"
+                            ? "Stall Owner"
+                            : formatWalletAddress(transaction.wallet)}
+                        </td>
+                        <td>{transaction.amount}</td>
+                        <td>
+                          <span className="stall-transaction-status">
+                            {transaction.status}
+                          </span>
+                        </td>
+                        <td>{transaction.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
-          <button
-            type="button"
-            className="stall-floating-add-product"
-            aria-label="Add product"
-            onClick={openCreateProductModal}
-          >
-            <img src={AddProduct} alt="" />
-          </button>
+          {activeStallTab === "products" && (
+            <button
+              type="button"
+              className="stall-floating-add-product"
+              aria-label="Add product"
+              onClick={openCreateProductModal}
+            >
+              <img src={AddProduct} alt="" />
+            </button>
+          )}
         </>
       )}
       {activeModal === "editStall" && (
@@ -725,12 +1445,17 @@ const Stall = () => {
                   type="button"
                   className="stall-modal-cancel-button"
                   onClick={closeModal}
+                  disabled={isUpdatingStall}
                 >
                   Cancel
                 </button>
 
-                <button type="submit" className="stall-modal-save-button">
-                  Save changes
+                <button
+                  type="submit"
+                  className="stall-modal-save-button"
+                  disabled={isUpdatingStall}
+                >
+                  {isUpdatingStall ? "Saving..." : "Save changes"}
                 </button>
               </div>
             </form>
@@ -818,12 +1543,17 @@ const Stall = () => {
                   type="button"
                   className="stall-modal-cancel-button"
                   onClick={closeModal}
+                  disabled={isSavingProduct}
                 >
                   Cancel
                 </button>
 
-                <button type="submit" className="stall-modal-save-button">
-                  Create product
+                <button
+                  type="submit"
+                  className="stall-modal-save-button"
+                  disabled={isSavingProduct}
+                >
+                  {isSavingProduct ? "Creating..." : "Create product"}
                 </button>
               </div>
             </form>
@@ -897,12 +1627,17 @@ const Stall = () => {
                   type="button"
                   className="stall-modal-cancel-button"
                   onClick={closeModal}
+                  disabled={isSavingProduct}
                 >
                   Cancel
                 </button>
 
-                <button type="submit" className="stall-modal-save-button">
-                  Save product
+                <button
+                  type="submit"
+                  className="stall-modal-save-button"
+                  disabled={isSavingProduct}
+                >
+                  {isSavingProduct ? "Saving..." : "Save product"}
                 </button>
               </div>
             </form>
@@ -917,8 +1652,9 @@ const Stall = () => {
               <span>Delete stall</span>
               <h2>Are you sure?</h2>
               <p>
-                This is a confirmation popup before deleting your stall. In the
-                real blockchain flow, this will call DeleteMyStall.
+                This will attempt to delete your stall from the blockchain.
+                Deletion is not allowed while CCN Day is ongoing or when the
+                stall still has unsettled paid payments.
               </p>
             </div>
 
@@ -927,6 +1663,7 @@ const Stall = () => {
                 type="button"
                 className="stall-modal-cancel-button"
                 onClick={closeModal}
+                disabled={isDeletingStall}
               >
                 Cancel
               </button>
@@ -935,8 +1672,9 @@ const Stall = () => {
                 type="button"
                 className="stall-modal-delete-button"
                 onClick={handleConfirmDeleteStall}
+                disabled={isDeletingStall}
               >
-                Confirm delete
+                {isDeletingStall ? "Confirming delete..." : "Confirm delete"}
               </button>
             </div>
           </div>
@@ -960,6 +1698,7 @@ const Stall = () => {
                 type="button"
                 className="stall-modal-cancel-button"
                 onClick={closeModal}
+                disabled={isDeletingProduct}
               >
                 Cancel
               </button>
@@ -968,8 +1707,9 @@ const Stall = () => {
                 type="button"
                 className="stall-modal-delete-button"
                 onClick={handleConfirmDeleteProduct}
+                disabled={isDeletingProduct}
               >
-                Confirm delete
+                {isDeletingProduct ? "Confirming delete..." : "Confirm delete"}
               </button>
             </div>
           </div>
@@ -979,10 +1719,24 @@ const Stall = () => {
       {activeModal === "success" && (
         <div className="stall-modal-backdrop">
           <div className="stall-modal-card confirm">
-            <div className="stall-modal-heading success">
-              <span>Success</span>
+            <div className={`stall-modal-heading ${transactionModalStatus}`}>
+              <span>
+                {transactionModalStatus === "success" ? "Success" : "Error"}
+              </span>
+
               <h2>{successMessage}</h2>
-              <p>Your mock UI state has been updated successfully.</p>
+
+              <p
+                className={
+                  transactionModalStatus === "error"
+                    ? "stall-modal-error-text"
+                    : ""
+                }
+              >
+                {transactionModalStatus === "success"
+                  ? "Your blockchain transaction has been completed successfully."
+                  : modalErrorMessage}
+              </p>
             </div>
 
             <div className="stall-modal-actions">

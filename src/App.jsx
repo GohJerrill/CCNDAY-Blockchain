@@ -4,6 +4,8 @@ import RegistrationPage from "./Pages/RegistrationPage";
 import Dashboard from "./Pages/Dashboard";
 import Sidebar from "./Components/Sidebar";
 import Stall from "./Pages/Stall";
+import StallHistory from "./Pages/StallHistory";
+import StallTransaction from "./Pages/StallTransaction";
 import ProfilePage from "./Pages/ProfilePage";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import { Web3Provider } from "./context/Web3Context";
@@ -16,6 +18,7 @@ import "./App.css";
 // Completed the main dashboard page, prearing to start on the other pages and login - 13 July
 // Completed the Profile page and the Stall page, preparing to start login and integration with Blockchain - 14 july 2026
 // Implemented and connected the Blockchain mainly on Authentication and Stalls. Preparing to do more next time - 16 July 2026
+// Implemented the frotnend and modified the backend logic for my code. Preparing to do profile, withdrawl, stall history and more tomorrow, God help me - 17 July 2026
 
 const DashboardLayout = () => {
   return (
@@ -41,6 +44,11 @@ function App() {
             <Route element={<DashboardLayout />}>
               <Route path="/UserDashboard" element={<Dashboard />} />
               <Route path="/Stall" element={<Stall />} />
+              <Route path="/StallHistory" element={<StallHistory />} />
+              <Route
+                path="/StallTransactions/:stallId"
+                element={<StallTransaction />}
+              />
               <Route path="/UserProfile" element={<ProfilePage />} />
             </Route>
           </Route>

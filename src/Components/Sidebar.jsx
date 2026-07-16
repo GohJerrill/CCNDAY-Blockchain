@@ -20,6 +20,19 @@ const StallIcon = () => (
   </svg>
 );
 
+const StallHistoryIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M6 4h12v16H6z" />
+    <path d="M9 8h6" />
+    <path d="M9 12h6" />
+    <path d="M9 16h4" />
+    <path d="M4 6h2" />
+    <path d="M4 10h2" />
+    <path d="M4 14h2" />
+    <path d="M4 18h2" />
+  </svg>
+);
+
 const UserIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="8" r="4" />
@@ -55,6 +68,7 @@ const getSidebarButtonClass = ({ isActive }) =>
 const Sidebar = () => {
   const location = useLocation();
   const isProfileActive = location.pathname === "/UserProfile";
+
   return (
     <aside className="dashboard-sidebar">
       <NavLink
@@ -78,11 +92,22 @@ const Sidebar = () => {
 
         <NavLink
           to="/Stall"
+          end
           className={getSidebarButtonClass}
           aria-label="My stall"
           data-tooltip="My Stall"
         >
           <StallIcon />
+        </NavLink>
+
+        <NavLink
+          to="/StallHistory"
+          end
+          className={getSidebarButtonClass}
+          aria-label="Stall history"
+          data-tooltip="Stall History"
+        >
+          <StallHistoryIcon />
         </NavLink>
 
         <div className="dashboard-profile-navigation">
