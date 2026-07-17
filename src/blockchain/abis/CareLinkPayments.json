@@ -524,6 +524,25 @@
         "type": "uint256"
       }
     ],
+    "name": "GetStallWithdrawableBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      }
+    ],
     "name": "HasUnsettledPaidPayments",
     "outputs": [
       {

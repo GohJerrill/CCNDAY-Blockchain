@@ -314,6 +314,26 @@
   box-shadow: 0 14px 34px rgba(80, 214, 170, 0.18);
 }
 
+.stall-transaction-table td.positive {
+  color: #65e0b9;
+  font-weight: 900;
+}
+
+.stall-transaction-table td.negative {
+  color: #ff8ea2;
+  font-weight: 900;
+}
+
+.stall-transaction-status.positive {
+  background: rgba(80, 214, 170, 0.14);
+  color: #65e0b9;
+}
+
+.stall-transaction-status.negative {
+  background: rgba(255, 91, 119, 0.13);
+  color: #ff8ea2;
+}
+
 @media (max-width: 1180px) {
   .stall-transaction-hero {
     grid-template-columns: 1fr;

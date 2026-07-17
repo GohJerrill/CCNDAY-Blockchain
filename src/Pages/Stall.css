@@ -865,9 +865,8 @@
 }
 
 .stall-transaction-table-wrap {
-  overflow-x: auto;
-
-  border-radius: 19px;
+  overflow-x: visible;
+  border-radius: 20px;
   border: 1px solid var(--dashboard-border);
   background: var(--dashboard-panel);
   box-shadow: 0 20px 55px rgba(0, 0, 0, 0.16);
@@ -875,16 +874,55 @@
 
 .stall-transaction-table {
   width: 100%;
-  min-width: 850px;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
 .stall-transaction-table th,
 .stall-transaction-table td {
-  padding: 16px 18px;
+  padding: 14px 14px;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
   white-space: nowrap;
   border-bottom: 1px solid var(--dashboard-border);
+}
+
+.stall-transaction-table th:nth-child(1),
+.stall-transaction-table td:nth-child(1) {
+  width: 13%;
+}
+
+.stall-transaction-table th:nth-child(2),
+.stall-transaction-table td:nth-child(2) {
+  width: 18%;
+}
+
+.stall-transaction-table th:nth-child(3),
+.stall-transaction-table td:nth-child(3) {
+  width: 15%;
+}
+
+.stall-transaction-table th:nth-child(4),
+.stall-transaction-table td:nth-child(4) {
+  width: 13%;
+}
+
+.stall-transaction-table th:nth-child(5),
+.stall-transaction-table td:nth-child(5) {
+  width: 13%;
+}
+
+.stall-transaction-table th:nth-child(6),
+.stall-transaction-table td:nth-child(6) {
+  width: 18%;
+}
+
+.stall-transaction-table th:nth-child(7),
+.stall-transaction-table td:nth-child(7) {
+  width: 10%;
+  text-align: right;
 }
 
 .stall-transaction-table th {
@@ -915,8 +953,9 @@
   align-items: center;
   justify-content: center;
 
-  min-width: 82px;
-  padding: 7px 10px;
+  min-width: 0;
+  padding: 6px 10px;
+  max-width: 100%;
 
   border-radius: 999px;
   background: rgba(80, 214, 170, 0.12);
@@ -924,6 +963,324 @@
 
   font-size: 0.72rem;
   font-weight: 900;
+}
+
+.stall-product-form-error {
+  grid-column: 1 / -1;
+
+  padding: 13px 15px;
+
+  border-radius: 14px;
+  background: rgba(255, 91, 119, 0.12);
+  border: 1px solid rgba(255, 91, 119, 0.28);
+  color: #ff9bad;
+
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.stall-transaction-action-cell {
+  text-align: right;
+}
+
+.stall-empty-products-state {
+  min-height: 360px;
+  padding: 46px 24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 22px;
+  background: var(--dashboard-panel);
+  border: 1px solid var(--dashboard-border);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.16);
+
+  text-align: center;
+}
+
+.stall-empty-products-image {
+  width: min(260px, 72%);
+  margin-bottom: 24px;
+  opacity: 0.95;
+}
+
+.stall-empty-products-state h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+
+.stall-empty-products-state p {
+  max-width: 480px;
+  margin: 12px 0 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.stall-empty-transactions-state {
+  min-height: 320px;
+  padding: 46px 24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 22px;
+  background: var(--dashboard-panel);
+  border: 1px solid var(--dashboard-border);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.16);
+
+  text-align: center;
+}
+
+.stall-empty-transactions-state h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+
+.stall-empty-transactions-state p {
+  max-width: 520px;
+  margin: 12px 0 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.stall-transaction-amount {
+  font-weight: 900;
+}
+
+.stall-transaction-amount.positive {
+  color: var(--dashboard-accent);
+}
+
+.stall-transaction-amount.negative {
+  color: #ff8ea2;
+}
+
+.stall-transaction-status.positive {
+  background: rgba(80, 214, 170, 0.12);
+  color: var(--dashboard-accent);
+}
+
+.stall-transaction-status.negative {
+  background: rgba(255, 91, 119, 0.13);
+  color: #ff8ea2;
+}
+
+.stall-transaction-refund-button {
+  min-width: 74px;
+  padding: 8px 13px;
+
+  border: 1px solid rgba(255, 116, 139, 0.36);
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 91, 119, 0.18),
+    rgba(255, 142, 162, 0.11)
+  );
+  color: #ff9bad;
+
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.stall-transaction-refund-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 142, 162, 0.6);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 91, 119, 0.25),
+    rgba(255, 142, 162, 0.15)
+  );
+}
+
+.stall-transaction-refund-button:disabled {
+  transform: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.stall-transaction-no-action {
+  color: rgba(255, 255, 255, 0.28);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+/* PENDING STALL STATE */
+
+.stall-pending-panel {
+  margin-top: 28px;
+  overflow: hidden;
+
+  border-radius: 26px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(188, 156, 255, 0.12),
+      transparent 34%
+    ),
+    var(--dashboard-panel);
+  border: 1px solid rgba(188, 156, 255, 0.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.stall-pending-header {
+  padding: clamp(24px, 3.5vw, 36px);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: flex-start;
+
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.stall-pending-status-icon {
+  width: 46px;
+  height: 46px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 16px;
+  background: rgba(188, 156, 255, 0.13);
+  border: 1px solid rgba(188, 156, 255, 0.28);
+}
+
+.stall-pending-status-icon span {
+  width: 14px;
+  height: 14px;
+
+  border-radius: 50%;
+  background: #bc9cff;
+  box-shadow: 0 0 0 8px rgba(188, 156, 255, 0.12);
+}
+
+.stall-pending-header h2 {
+  margin: 8px 0 10px;
+
+  color: #ffffff;
+  font-size: clamp(1.45rem, 2.5vw, 2.2rem);
+  letter-spacing: -1px;
+}
+
+.stall-pending-header p {
+  max-width: 780px;
+  margin: 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.stall-pending-content {
+  padding: clamp(22px, 3vw, 32px);
+
+  display: grid;
+  grid-template-columns: minmax(230px, 0.42fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.stall-pending-image-wrapper {
+  min-height: 245px;
+  overflow: hidden;
+
+  border-radius: 21px;
+  background: #242430;
+  border: 1px solid var(--dashboard-border);
+}
+
+.stall-pending-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.stall-pending-details {
+  min-width: 0;
+}
+
+.stall-pending-details h3 {
+  margin: 18px 0 10px;
+
+  color: #ffffff;
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  letter-spacing: -0.8px;
+}
+
+.stall-pending-details p {
+  margin: 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.stall-pending-meta-grid {
+  margin-top: 22px;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stall-pending-meta-grid div {
+  min-width: 0;
+  padding: 14px;
+
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--dashboard-border);
+}
+
+.stall-pending-meta-grid span {
+  display: block;
+  margin-bottom: 6px;
+
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.stall-pending-meta-grid strong {
+  display: block;
+  overflow: hidden;
+
+  color: rgba(255, 255, 255, 0.84);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 620px) {

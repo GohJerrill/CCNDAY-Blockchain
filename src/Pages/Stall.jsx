@@ -4,42 +4,108 @@ import { useWeb3 } from "../context/Web3Context";
 import "./Stall.css";
 import NoCCNDay from "../assets/NoCCNDay.svg";
 import AddProduct from "../assets/AddProduct.png";
+import EmptyStall from "../assets/EmptyStall.svg";
 import CCNDAYTP from "../assets/CCNDAYTP.png";
 
-const mockCurrentStallTransactions = [
-  {
-    id: "TXN-001",
-    type: "Payment",
-    wallet: "0x7A12B6c91aFe203D88bE93198c24A81A9191C2B0",
-    amount: "+0.004 ETH",
-    status: "Paid",
-    date: "Today, 10:15 AM",
-  },
-  {
-    id: "TXN-002",
-    type: "Payment",
-    wallet: "0x93BC02F8A778Ac291b63B8a122901Eb21021F8CD",
-    amount: "+0.006 ETH",
-    status: "Paid",
-    date: "Today, 11:20 AM",
-  },
-  {
-    id: "TXN-003",
-    type: "Refund",
-    wallet: "0x51E88BAdD2176a812B90071EE00fB128C88BA542",
-    amount: "-0.002 ETH",
-    status: "Refunded",
-    date: "Today, 12:05 PM",
-  },
-  {
-    id: "TXN-004",
-    type: "Withdrawal",
-    wallet: "Stall Owner",
-    amount: "-0.008 ETH",
-    status: "Withdrawn",
-    date: "Today, 6:30 PM",
-  },
+const transactionTypeLabels = [
+  "Payment received",
+  "Refund issued",
+  "Withdrawal",
 ];
+
+const transactionStatusLabels = ["Received", "Refunded", "Withdrawn"];
+
+const formatSignedWeiToEth = (signedWeiValue) => {
+  const signedWei = BigInt(signedWeiValue);
+  const isNegative = signedWei < 0n;
+  const absoluteWei = isNegative ? -signedWei : signedWei;
+
+  const ether = 10n ** 18n;
+  const whole = absoluteWei / ether;
+  const fraction = (absoluteWei % ether)
+    .toString()
+    .padStart(18, "0")
+    .slice(0, 4);
+  const cleanedFraction = fraction.replace(/0+$/, "");
+
+  return `${isNegative ? "-" : "+"}${whole}${
+    cleanedFraction ? `.${cleanedFraction}` : ""
+  } ETH`;
+};
+
+const getTransactionDisplayId = (transaction) => {
+  if (transaction.WithdrawalID > 0) {
+    return `WDR-${transaction.WithdrawalID}`;
+  }
+
+  return `PAY-${transaction.PaymentID}`;
+};
+
+const mapStallTransactionFromContract = (transaction) => {
+  const transactionTypeValue = toNumber(
+    transaction.transactionType ?? transaction[9],
+  );
+
+  const paymentId = toNumber(transaction.PaymentID ?? transaction[0]);
+  const withdrawalId = toNumber(transaction.WithdrawalID ?? transaction[1]);
+  const customerWallet = transaction.CustomerWallet ?? transaction[4];
+  const stallOwnerWallet = transaction.StallOwnerWallet ?? transaction[5];
+  const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
+  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[8]);
+
+  const mappedTransaction = {
+    PaymentID: paymentId,
+    WithdrawalID: withdrawalId,
+    StallID: toNumber(transaction.StallID ?? transaction[2]),
+    CCNDayID: toNumber(transaction.CCNDayID ?? transaction[3]),
+    CustomerWallet: customerWallet,
+    StallOwnerWallet: stallOwnerWallet,
+    SignedAmount: signedAmount,
+    TransactionAt: transactionAt,
+    transactionTypeValue,
+    transactionType:
+      transactionTypeLabels[transactionTypeValue] || "Transaction",
+    status: transactionStatusLabels[transactionTypeValue] || "Recorded",
+  };
+
+  return {
+    ...mappedTransaction,
+    id: getTransactionDisplayId(mappedTransaction),
+    wallet:
+      mappedTransaction.transactionType === "Withdrawal"
+        ? mappedTransaction.StallOwnerWallet
+        : mappedTransaction.CustomerWallet,
+    amount: formatSignedWeiToEth(mappedTransaction.SignedAmount),
+    date: formatDateTime(mappedTransaction.TransactionAt),
+    amountType:
+      BigInt(mappedTransaction.SignedAmount) < 0n ? "negative" : "positive",
+  };
+};
+
+const attachRefundAvailabilityToTransactions = (transactions) => {
+  const refundedPaymentIds = new Set(
+    transactions
+      .filter((transaction) => {
+        return (
+          transaction.transactionTypeValue === 1 && transaction.PaymentID > 0
+        );
+      })
+      .map((transaction) => transaction.PaymentID),
+  );
+
+  return transactions.map((transaction) => {
+    const isPaidTransaction = transaction.transactionTypeValue === 0;
+    const hasPaymentId = transaction.PaymentID > 0;
+    const hasAlreadyBeenRefunded = refundedPaymentIds.has(
+      transaction.PaymentID,
+    );
+
+    return {
+      ...transaction,
+      canRefund: isPaidTransaction && hasPaymentId && !hasAlreadyBeenRefunded,
+    };
+  });
+};
 
 const stallPageStates = {
   LOADING: "loading",
@@ -162,6 +228,41 @@ const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
     return "Your stall must be approved before you can perform this action.";
   }
 
+  if (rawMessage.includes("StallNotReadyForWithdrawal")) {
+    return "This stall is not ready for withdrawal yet. The organiser must allow withdrawal after CCN Day has ended.";
+  }
+
+  if (rawMessage.includes("NoWithdrawablePayments")) {
+    return "There are no paid payments available to withdraw for this stall.";
+  }
+
+  if (rawMessage.includes("StallHasWithdrawablePayments")) {
+    return "This stall still has withdrawable payments. Please withdraw the balance instead of completing it without withdrawal.";
+  }
+
+  if (rawMessage.includes("TransferFailed")) {
+    return "The withdrawal transfer failed. Please try again.";
+  }
+
+  if (rawMessage.includes("PaymentDoesNotExist")) {
+    return "This payment record does not exist.";
+  }
+
+  if (
+    rawMessage.includes("PaymentAlreadyRefunded") ||
+    rawMessage.includes("AlreadyRefunded")
+  ) {
+    return "This payment has already been refunded.";
+  }
+
+  if (rawMessage.includes("OnlyPaidPaymentCanBeRefunded")) {
+    return "Only paid transactions can be refunded.";
+  }
+
+  if (rawMessage.includes("NotAllowedToRefundPayment")) {
+    return "You are not allowed to refund this payment.";
+  }
+
   if (
     rawMessage.includes("execution reverted (unknown custom error)") ||
     rawMessage.includes("CALL_EXCEPTION")
@@ -223,6 +324,7 @@ const mapStallFromContract = (stall) => {
     stallStatus: stallStatusLabels[stallStatusValue] || "Unknown",
     AllowedWithdrawal: Boolean(stall.AllowedWithdrawal ?? stall[11]),
     CCNDayID: toNumber(stall.CCNDayID ?? stall[12]),
+    WithdrawalCompleted: Boolean(stall.WithdrawalCompleted ?? stall[13]),
   };
 };
 
@@ -269,6 +371,76 @@ const normaliseWeiInput = (weiValue) => {
   return cleanedValue;
 };
 
+const validateProductForm = (form) => {
+  const productName = form.ProductName.trim();
+  const productDescription = form.ProductDescription.trim();
+  const productImage = form.ProductImage.trim();
+  const productPrice = form.ProductPrice.trim();
+
+  if (!productName) {
+    return {
+      isValid: false,
+      message: "Product name is required.",
+    };
+  }
+
+  if (productName.length > 80) {
+    return {
+      isValid: false,
+      message: "Product name must be 80 characters or less.",
+    };
+  }
+
+  if (!productDescription) {
+    return {
+      isValid: false,
+      message: "Product description is required.",
+    };
+  }
+
+  if (productDescription.length > 500) {
+    return {
+      isValid: false,
+      message: "Product description must be 500 characters or less.",
+    };
+  }
+
+  if (!productImage) {
+    return {
+      isValid: false,
+      message: "Product image URL is required.",
+    };
+  }
+
+  if (productImage.length > 300) {
+    return {
+      isValid: false,
+      message: "Product image URL must be 300 characters or less.",
+    };
+  }
+
+  if (!productPrice) {
+    return {
+      isValid: false,
+      message: "Product price is required.",
+    };
+  }
+
+  try {
+    const productPriceInWei = normaliseWeiInput(productPrice);
+
+    return {
+      isValid: true,
+      productPriceInWei,
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      message: error.message,
+    };
+  }
+};
+
 const Stall = () => {
   const {
     walletAddress,
@@ -298,9 +470,16 @@ const Stall = () => {
   const [ownedStall, setOwnedStall] = useState(null);
   const [products, setProducts] = useState([]);
 
+  const [stallTransactions, setStallTransactions] = useState([]);
+  const [isLoadingStallTransactions, setIsLoadingStallTransactions] =
+    useState(false);
+  const [stallTransactionsError, setStallTransactionsError] = useState("");
+
   const [activeModal, setActiveModal] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [productFormError, setProductFormError] = useState("");
 
   const [stallStatusForm, setStallStatusForm] = useState("Open");
 
@@ -313,8 +492,14 @@ const Stall = () => {
   });
   const [canWithdrawStallPayments, setCanWithdrawStallPayments] =
     useState(false);
+  const [
+    canCompleteStallWithoutWithdrawal,
+    setCanCompleteStallWithoutWithdrawal,
+  ] = useState(false);
   const [withdrawableBalance, setWithdrawableBalance] = useState("0");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isCompletingStall, setIsCompletingStall] = useState(false);
+  const [isRefundingPayment, setIsRefundingPayment] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
@@ -351,7 +536,11 @@ const Stall = () => {
           setProducts([]);
           setWithdrawableBalance("0");
           setCanWithdrawStallPayments(false);
+          setCanCompleteStallWithoutWithdrawal(false);
           setStallPageState(stallPageStates.NO_CCN_DAY);
+          setStallTransactions([]);
+          setStallTransactionsError("");
+          setIsLoadingStallTransactions(false);
           return;
         }
 
@@ -380,7 +569,9 @@ const Stall = () => {
 
           if (paymentsContract) {
             withdrawableAmount =
-              await paymentsContract.GetMyWithdrawableBalance();
+              await paymentsContract.GetStallWithdrawableBalance(
+                mappedOwnedStall.StallID,
+              );
           }
 
           const withdrawableAmountBigInt = BigInt(
@@ -390,6 +581,11 @@ const Stall = () => {
           setWithdrawableBalance(withdrawableAmountBigInt.toString());
           setCanWithdrawStallPayments(
             mappedOwnedStall.AllowedWithdrawal && withdrawableAmountBigInt > 0n,
+          );
+          setCanCompleteStallWithoutWithdrawal(
+            Boolean(paymentsContract) &&
+              mappedOwnedStall.AllowedWithdrawal &&
+              withdrawableAmountBigInt === 0n,
           );
 
           try {
@@ -411,6 +607,42 @@ const Stall = () => {
             setProducts([]);
           }
 
+          try {
+            setIsLoadingStallTransactions(true);
+            setStallTransactionsError("");
+
+            if (!paymentsContract) {
+              setStallTransactions([]);
+              setStallTransactionsError(
+                "Payment contract is not connected yet. Please refresh and try again.",
+              );
+            } else {
+              const contractTransactions =
+                await paymentsContract.GetStallTransactionHistory(
+                  mappedOwnedStall.StallID,
+                );
+
+              const mappedTransactions = attachRefundAvailabilityToTransactions(
+                contractTransactions.map(mapStallTransactionFromContract),
+              ).sort((firstTransaction, secondTransaction) => {
+                return (
+                  secondTransaction.TransactionAt -
+                  firstTransaction.TransactionAt
+                );
+              });
+
+              setStallTransactions(mappedTransactions);
+            }
+          } catch (error) {
+            console.error("Stall transaction load error:", error);
+            setStallTransactions([]);
+            setStallTransactionsError(
+              "Unable to load stall transactions from the blockchain. Please try again.",
+            );
+          } finally {
+            setIsLoadingStallTransactions(false);
+          }
+
           if (mappedOwnedStall.stallStatus === "Pending") {
             setStallPageState(stallPageStates.PENDING_STALL);
             return;
@@ -422,7 +654,11 @@ const Stall = () => {
 
         setOwnedStall(null);
         setProducts([]);
+        setStallTransactions([]);
+        setStallTransactionsError("");
         setWithdrawableBalance("0");
+        setCanWithdrawStallPayments(false);
+        setCanCompleteStallWithoutWithdrawal(false);
         setCanWithdrawStallPayments(false);
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -473,6 +709,9 @@ const Stall = () => {
           setOwnedStall(null);
           setProducts([]);
           setStallPageState(stallPageStates.NO_CCN_DAY);
+          setStallTransactions([]);
+          setStallTransactionsError("");
+          setIsLoadingStallTransactions(false);
           return;
         }
 
@@ -625,6 +864,7 @@ const Stall = () => {
       setIsSubmitting(false);
     }
   };
+
   const handleWithdrawStallPayments = async () => {
     if (!paymentsContract || !ownedStall) {
       showErrorModal(
@@ -660,19 +900,98 @@ const Stall = () => {
     }
   };
 
+  const handleCompleteStallWithoutWithdrawal = async () => {
+    if (!paymentsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to complete stall.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    try {
+      setIsCompletingStall(true);
+
+      const tx = await paymentsContract.CompleteStallWithoutWithdrawal(
+        ownedStall.StallID,
+      );
+
+      await tx.wait();
+
+      showSuccessModal("Stall has been completed successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Complete stall without withdrawal error:", error);
+
+      showErrorModal(
+        "Unable to complete stall.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to complete this stall. Please try again.",
+        ),
+      );
+    } finally {
+      setIsCompletingStall(false);
+    }
+  };
+
+  const openRefundPaymentModal = (transaction) => {
+    setSelectedTransaction(transaction);
+    setActiveModal("refundPayment");
+  };
+
+  const handleConfirmRefundPayment = async () => {
+    if (!paymentsContract || !selectedTransaction) {
+      showErrorModal(
+        "Unable to refund payment.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    try {
+      setIsRefundingPayment(true);
+
+      const tx = await paymentsContract.RefundPayment(
+        selectedTransaction.PaymentID,
+      );
+
+      await tx.wait();
+
+      showSuccessModal("Payment has been refunded successfully.");
+      refreshStallPage();
+    } catch (error) {
+      console.error("Refund payment error:", error);
+
+      showErrorModal(
+        "Unable to refund payment.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to refund this payment. Please try again.",
+        ),
+      );
+    } finally {
+      setIsRefundingPayment(false);
+    }
+  };
+
   const closeModal = () => {
     if (
       isSavingProduct ||
       isDeletingProduct ||
       isUpdatingStall ||
       isDeletingStall ||
-      isWithdrawing
+      isWithdrawing ||
+      isCompletingStall ||
+      isRefundingPayment
     ) {
       return;
     }
 
     setActiveModal(null);
     setSelectedProduct(null);
+    setSelectedTransaction(null);
+    setProductFormError("");
     setModalErrorMessage("");
   };
 
@@ -765,6 +1084,7 @@ const Stall = () => {
 
   const openEditProductModal = (product) => {
     setSelectedProduct(product);
+    setProductFormError("");
 
     setProductForm({
       ProductName: product.ProductName,
@@ -784,6 +1104,7 @@ const Stall = () => {
 
   const openCreateProductModal = () => {
     setSelectedProduct(null);
+    setProductFormError("");
 
     setProductForm({
       ProductName: "",
@@ -799,6 +1120,10 @@ const Stall = () => {
   const handleProductFormChange = (event) => {
     const { name, value } = event.target;
 
+    if (productFormError) {
+      setProductFormError("");
+    }
+
     setProductForm((currentForm) => ({
       ...currentForm,
       [name]: value,
@@ -809,10 +1134,7 @@ const Stall = () => {
     event.preventDefault();
 
     if (!stallsContract || !selectedProduct) {
-      showErrorModal(
-        "Unable to update product.",
-        "Please reconnect your wallet and try again.",
-      );
+      setProductFormError("Please reconnect your wallet and try again.");
       return;
     }
 
@@ -821,10 +1143,17 @@ const Stall = () => {
       return;
     }
 
+    const validationResult = validateProductForm(productForm);
+
+    if (!validationResult.isValid) {
+      setProductFormError(validationResult.message);
+      return;
+    }
+
     try {
       setIsSavingProduct(true);
+      setProductFormError("");
 
-      const productPriceInWei = normaliseWeiInput(productForm.ProductPrice);
       const productStatusValue = productStatusLabels.indexOf(
         productForm.productStatus,
       );
@@ -834,7 +1163,7 @@ const Stall = () => {
         productForm.ProductName.trim(),
         productForm.ProductDescription.trim(),
         productForm.ProductImage.trim(),
-        productPriceInWei,
+        validationResult.productPriceInWei,
         productStatusValue,
       );
 
@@ -845,8 +1174,7 @@ const Stall = () => {
     } catch (error) {
       console.error("Edit product error:", error);
 
-      showErrorModal(
-        "Unable to update product.",
+      setProductFormError(
         getFriendlyBlockchainErrorMessage(
           error,
           error?.message || "Unable to update product. Please try again.",
@@ -861,17 +1189,21 @@ const Stall = () => {
     event.preventDefault();
 
     if (!stallsContract || !ownedStall) {
-      showErrorModal(
-        "Unable to create product.",
-        "Please reconnect your wallet and try again.",
-      );
+      setProductFormError("Please reconnect your wallet and try again.");
+      return;
+    }
+
+    const validationResult = validateProductForm(productForm);
+
+    if (!validationResult.isValid) {
+      setProductFormError(validationResult.message);
       return;
     }
 
     try {
       setIsSavingProduct(true);
+      setProductFormError("");
 
-      const productPriceInWei = normaliseWeiInput(productForm.ProductPrice);
       const productStatusValue = productStatusLabels.indexOf(
         productForm.productStatus,
       );
@@ -881,7 +1213,7 @@ const Stall = () => {
         productForm.ProductName.trim(),
         productForm.ProductDescription.trim(),
         productForm.ProductImage.trim(),
-        productPriceInWei,
+        validationResult.productPriceInWei,
         productStatusValue,
       );
 
@@ -900,8 +1232,7 @@ const Stall = () => {
     } catch (error) {
       console.error("Create product error:", error);
 
-      showErrorModal(
-        "Unable to create product.",
+      setProductFormError(
         getFriendlyBlockchainErrorMessage(
           error,
           error?.message || "Unable to create product. Please try again.",
@@ -1049,57 +1380,72 @@ const Stall = () => {
         <>
           {renderCCNDayHero()}
 
-          <section className="stall-owned-card">
-            <div className="stall-owned-image-wrapper">
-              <img src={ownedStall.StallImage} alt={ownedStall.StallName} />
-            </div>
-
-            <div className="stall-owned-content">
-              <div className="stall-owned-pills">
-                <span>{ownedStall.stallType}</span>
-                <span>{ownedStall.StallSchool}</span>
-                <span>{ownedStall.stallStatus}</span>
+          <section className="stall-pending-panel">
+            <div className="stall-pending-header">
+              <div className="stall-pending-status-icon">
+                <span />
               </div>
 
-              <h2>{ownedStall.StallName}</h2>
+              <div>
+                <span className="stall-section-eyebrow">
+                  Pending organiser review
+                </span>
 
-              <p>{ownedStall.StallDescription}</p>
+                <h2>Your stall application is waiting for approval</h2>
 
-              <div className="stall-owned-meta-grid">
-                <div>
-                  <span>Location</span>
-                  <strong>Pending organiser assignment</strong>
+                <p>
+                  Your stall has been submitted successfully. Products,
+                  payments, refunds, and withdrawals will be available after the
+                  organiser approves your stall.
+                </p>
+              </div>
+            </div>
+
+            <div className="stall-pending-content">
+              <div className="stall-pending-image-wrapper">
+                <img src={ownedStall.StallImage} alt={ownedStall.StallName} />
+              </div>
+
+              <div className="stall-pending-details">
+                <div className="stall-owned-pills">
+                  <span>{ownedStall.stallType}</span>
+                  <span>
+                    {ownedStall.NeedElectricalPort
+                      ? "Electrical needed"
+                      : "No electrical port"}
+                  </span>
+                  <span>{ownedStall.stallStatus}</span>
                 </div>
 
-                <div>
-                  <span>Electrical port</span>
-                  <strong>
-                    {ownedStall.NeedElectricalPort ? "Needed" : "Not needed"}
-                  </strong>
-                </div>
+                <h3>{ownedStall.StallName}</h3>
 
-                <div>
-                  <span>Owner wallet</span>
-                  <strong title={ownedStall.StallOwnerWallet}>
-                    {formatWalletAddress(ownedStall.StallOwnerWallet)}
-                  </strong>
-                </div>
+                <p>{ownedStall.StallDescription}</p>
 
-                <div>
-                  <span>Approval status</span>
-                  <strong>Pending approval</strong>
+                <div className="stall-pending-meta-grid">
+                  <div>
+                    <span>Location</span>
+                    <strong>Pending organiser assignment</strong>
+                  </div>
+
+                  <div>
+                    <span>Stall school</span>
+                    <strong>Pending organiser assignment</strong>
+                  </div>
+
+                  <div>
+                    <span>Owner wallet</span>
+                    <strong title={ownedStall.StallOwnerWallet}>
+                      {formatWalletAddress(ownedStall.StallOwnerWallet)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Next step</span>
+                    <strong>Wait for organiser approval</strong>
+                  </div>
                 </div>
               </div>
             </div>
-          </section>
-
-          <section className="stall-restriction-card">
-            <h2>Your stall application is pending</h2>
-
-            <p>
-              Your stall has been submitted successfully. Products and payments
-              will be available after the organiser approves your stall.
-            </p>
           </section>
         </>
       )}
@@ -1213,6 +1559,18 @@ const Stall = () => {
                 </button>
               )}
 
+              {canCompleteStallWithoutWithdrawal && (
+                <button
+                  type="button"
+                  className="stall-primary-button"
+                  onClick={handleCompleteStallWithoutWithdrawal}
+                  disabled={isCompletingStall}
+                  title="This stall has no remaining balance to withdraw."
+                >
+                  {isCompletingStall ? "Completing..." : "Complete Stall"}
+                </button>
+              )}
+
               <button
                 type="button"
                 className="stall-secondary-button"
@@ -1294,7 +1652,9 @@ const Stall = () => {
               <span>
                 {activeStallTab === "products"
                   ? `${products.length} products`
-                  : `${mockCurrentStallTransactions.length} transactions`}
+                  : isLoadingStallTransactions
+                    ? "Loading transactions..."
+                    : `${stallTransactions.length} transactions`}
               </span>
             </div>
 
@@ -1317,87 +1677,168 @@ const Stall = () => {
             </div>
 
             {activeStallTab === "products" ? (
-              <div className="stall-product-grid">
-                {products.map((product) => (
-                  <article
-                    className="stall-product-card"
-                    key={product.ProductID}
-                  >
-                    <div className="stall-product-image-wrapper">
-                      <img
-                        src={product.ProductImage}
-                        alt={product.ProductName}
-                        loading="lazy"
-                      />
+              products.length === 0 ? (
+                <div className="stall-empty-products-state">
+                  <img
+                    src={EmptyStall}
+                    alt=""
+                    className="stall-empty-products-image"
+                  />
+                  <h3>No products added yet</h3>
+                  <p>
+                    This stall does not have any products yet. Add your first
+                    product using the green plus button.
+                  </p>
+                </div>
+              ) : (
+                <div className="stall-product-grid">
+                  {products.map((product) => (
+                    <article
+                      className="stall-product-card"
+                      key={product.ProductID}
+                    >
+                      <div className="stall-product-image-wrapper">
+                        <img
+                          src={product.ProductImage}
+                          alt={product.ProductName}
+                          loading="lazy"
+                        />
 
-                      <div className="stall-product-card-actions">
-                        <button
-                          type="button"
-                          className="stall-product-edit-button"
-                          onClick={() => openEditProductModal(product)}
-                        >
-                          Edit
-                        </button>
+                        <div className="stall-product-card-actions">
+                          <button
+                            type="button"
+                            className="stall-product-edit-button"
+                            onClick={() => openEditProductModal(product)}
+                          >
+                            Edit
+                          </button>
 
-                        <button
-                          type="button"
-                          className="stall-product-delete-button"
-                          onClick={() => openDeleteProductModal(product)}
-                        >
-                          Delete
-                        </button>
+                          <button
+                            type="button"
+                            className="stall-product-delete-button"
+                            onClick={() => openDeleteProductModal(product)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="stall-product-content">
-                      <div className="stall-product-status-row">
-                        <span>{product.productStatus}</span>
-                        <strong>{formatWeiToEth(product.ProductPrice)}</strong>
+                      <div className="stall-product-content">
+                        <div className="stall-product-status-row">
+                          <span>{product.productStatus}</span>
+                          <strong>
+                            {formatWeiToEth(product.ProductPrice)}
+                          </strong>
+                        </div>
+
+                        <h3>{product.ProductName}</h3>
+
+                        <p>{product.ProductDescription}</p>
                       </div>
-
-                      <h3>{product.ProductName}</h3>
-
-                      <p>{product.ProductDescription}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    </article>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="stall-transaction-table-wrap">
-                <table className="stall-transaction-table">
-                  <thead>
-                    <tr>
-                      <th>Transaction ID</th>
-                      <th>Type</th>
-                      <th>Wallet</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
+              <>
+                {isLoadingStallTransactions ? (
+                  <div className="stall-empty-transactions-state">
+                    <CareLinkLoader
+                      label="Loading transactions..."
+                      sublabel="Please wait while CareLink loads this stall's transaction history."
+                    />
+                  </div>
+                ) : stallTransactionsError ? (
+                  <div className="stall-empty-transactions-state">
+                    <h3>Unable to load transactions</h3>
+                    <p>{stallTransactionsError}</p>
+                  </div>
+                ) : stallTransactions.length === 0 ? (
+                  <div className="stall-empty-transactions-state">
+                    <h3>No transactions found</h3>
+                    <p>
+                      This stall does not have any payment, refund, or
+                      withdrawal records yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="stall-transaction-table-wrap">
+                    <table className="stall-transaction-table">
+                      <thead>
+                        <tr>
+                          <th>Transaction ID</th>
+                          <th>Type</th>
+                          <th>Wallet</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
 
-                  <tbody>
-                    {mockCurrentStallTransactions.map((transaction) => (
-                      <tr key={transaction.id}>
-                        <td>{transaction.id}</td>
-                        <td>{transaction.type}</td>
-                        <td title={transaction.wallet}>
-                          {transaction.wallet === "Stall Owner"
-                            ? "Stall Owner"
-                            : formatWalletAddress(transaction.wallet)}
-                        </td>
-                        <td>{transaction.amount}</td>
-                        <td>
-                          <span className="stall-transaction-status">
-                            {transaction.status}
-                          </span>
-                        </td>
-                        <td>{transaction.date}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      <tbody>
+                        {stallTransactions.map((transaction) => (
+                          <tr
+                            key={`${transaction.id}-${transaction.TransactionAt}`}
+                          >
+                            <td>{transaction.id}</td>
+
+                            <td>{transaction.transactionType}</td>
+
+                            <td title={transaction.wallet}>
+                              {formatWalletAddress(transaction.wallet)}
+                            </td>
+
+                            <td
+                              className={
+                                transaction.amountType === "negative"
+                                  ? "stall-transaction-amount negative"
+                                  : "stall-transaction-amount positive"
+                              }
+                            >
+                              {transaction.amount}
+                            </td>
+
+                            <td>
+                              <span
+                                className={
+                                  transaction.amountType === "negative"
+                                    ? "stall-transaction-status negative"
+                                    : "stall-transaction-status positive"
+                                }
+                              >
+                                {transaction.status}
+                              </span>
+                            </td>
+
+                            <td>{transaction.date}</td>
+
+                            <td className="stall-transaction-action-cell">
+                              {transaction.canRefund ? (
+                                <button
+                                  type="button"
+                                  className="stall-transaction-refund-button"
+                                  onClick={() =>
+                                    openRefundPaymentModal(transaction)
+                                  }
+                                  disabled={isRefundingPayment}
+                                  title={`Refund ${transaction.id}`}
+                                >
+                                  Refund
+                                </button>
+                              ) : (
+                                <span className="stall-transaction-no-action">
+                                  —
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </section>
 
@@ -1485,7 +1926,6 @@ const Stall = () => {
                   placeholder="Example: 5000000000000000"
                   value={productForm.ProductPrice}
                   onChange={handleProductFormChange}
-                  required
                 />
               </label>
 
@@ -1495,7 +1935,6 @@ const Stall = () => {
                   name="productStatus"
                   value={productForm.productStatus}
                   onChange={handleProductFormChange}
-                  required
                 >
                   <option value="Available">Available</option>
                   <option value="Unavailable">Unavailable</option>
@@ -1510,7 +1949,6 @@ const Stall = () => {
                   placeholder="Example: Chocolate Brownie"
                   value={productForm.ProductName}
                   onChange={handleProductFormChange}
-                  required
                 />
               </label>
 
@@ -1522,7 +1960,6 @@ const Stall = () => {
                   placeholder="Paste an image URL for your product"
                   value={productForm.ProductImage}
                   onChange={handleProductFormChange}
-                  required
                 />
               </label>
 
@@ -1534,9 +1971,14 @@ const Stall = () => {
                   placeholder="Describe your product..."
                   value={productForm.ProductDescription}
                   onChange={handleProductFormChange}
-                  required
                 />
               </label>
+
+              {productFormError && (
+                <div className="stall-product-form-error" role="alert">
+                  {productFormError}
+                </div>
+              )}
 
               <div className="stall-modal-actions">
                 <button
@@ -1621,6 +2063,12 @@ const Stall = () => {
                   onChange={handleProductFormChange}
                 />
               </label>
+
+              {productFormError && (
+                <div className="stall-product-form-error" role="alert">
+                  {productFormError}
+                </div>
+              )}
 
               <div className="stall-modal-actions">
                 <button
@@ -1710,6 +2158,58 @@ const Stall = () => {
                 disabled={isDeletingProduct}
               >
                 {isDeletingProduct ? "Confirming delete..." : "Confirm delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeModal === "refundPayment" && selectedTransaction && (
+        <div className="stall-modal-backdrop">
+          <div className="stall-modal-card confirm">
+            <div className="stall-modal-heading">
+              <span>Refund payment</span>
+
+              <h2>Refund {selectedTransaction.id}?</h2>
+
+              <p>
+                This will refund the selected paid transaction on the
+                blockchain. The refund will also appear in this stall's
+                transaction history.
+              </p>
+            </div>
+
+            <div className="stall-owned-meta-grid">
+              <div>
+                <span>Customer wallet</span>
+                <strong title={selectedTransaction.CustomerWallet}>
+                  {formatWalletAddress(selectedTransaction.CustomerWallet)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Refund amount</span>
+                <strong>{selectedTransaction.amount}</strong>
+              </div>
+            </div>
+
+            <div className="stall-modal-actions">
+              <button
+                type="button"
+                className="stall-modal-cancel-button"
+                onClick={closeModal}
+                disabled={isRefundingPayment}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="stall-modal-delete-button"
+                onClick={handleConfirmRefundPayment}
+                disabled={isRefundingPayment}
+              >
+                {isRefundingPayment ? "Refunding..." : "Confirm refund"}
               </button>
             </div>
           </div>

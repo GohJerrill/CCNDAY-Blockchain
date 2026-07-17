@@ -1,52 +1,41 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import CareLinkLoader from "../components/CareLinkLoader";
+import { useWeb3 } from "../context/Web3Context";
+import NoTransactionsUser from "../assets/NoTransactionsUser.svg";
 import "./ProfilePage.css";
 
-const mockUserProfile = {
-  Username: "William",
-  WalletAddress: "0x71C4A9E23981CB88217391A20F18F4A9833293A2",
-  UserType: "Student",
-  School: "IIT",
-  RegisteredAt: 1720454400,
+const userTypeLabels = ["Customer", "Student", "Staff"];
+
+const schoolLabels = [
+  "IIT",
+  "Business",
+  "Engineering",
+  "Design",
+  "Science",
+  "Humanities",
+  "Others",
+];
+
+const transactionTypeLabels = ["Payment", "Refund", "Withdrawal"];
+
+const getProfileTheme = (profile) => {
+  if (!profile) return "student";
+
+  if (profile.IsOrganiser) return "organiser";
+  if (profile.IsStallOwner) return "stall-owner";
+  if (profile.UserType === "Staff") return "staff";
+
+  return "student";
 };
 
-const mockTransactionHistory = [
-  {
-    PaymentID: 1,
-    WithdrawalID: 0,
-    StallID: 1,
-    CCNDayID: 1,
-    CustomerWallet: "0x71C4A9E23981CB88217391A20F18F4A9833293A2",
-    StallOwnerWallet: "0x3B1646AD20F85AA32197203D044A96C682572C10",
-    Amount: "100000000000000000",
-    SignedAmount: "-100000000000000000",
-    TransactionAt: 1783942320,
-    transactionType: "PaidTransaction",
-  },
-  {
-    PaymentID: 1,
-    WithdrawalID: 0,
-    StallID: 1,
-    CCNDayID: 1,
-    CustomerWallet: "0x71C4A9E23981CB88217391A20F18F4A9833293A2",
-    StallOwnerWallet: "0x3B1646AD20F85AA32197203D044A96C682572C10",
-    Amount: "100000000000000000",
-    SignedAmount: "100000000000000000",
-    TransactionAt: 1783942450,
-    transactionType: "RefundedTransaction",
-  },
-  {
-    PaymentID: 2,
-    WithdrawalID: 1,
-    StallID: 1,
-    CCNDayID: 1,
-    CustomerWallet: "0x8A22C0F892392E4FCE9211AAB93218F1529A1BC0",
-    StallOwnerWallet: "0x71C4A9E23981CB88217391A20F18F4A9833293A2",
-    Amount: "250000000000000000",
-    SignedAmount: "-250000000000000000",
-    TransactionAt: 1783942700,
-    transactionType: "WithdrawalTransaction",
-  },
-];
+const getDisplayRole = (profile) => {
+  if (!profile) return "Student";
+
+  if (profile.IsOrganiser) return "Organiser";
+  if (profile.IsStallOwner) return "Stall Owner";
+
+  return profile.UserType;
+};
 
 const UserIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -62,11 +51,26 @@ const EditIcon = () => (
   </svg>
 );
 
+const toNumber = (value) => {
+  if (value === undefined || value === null) return 0;
+  return Number(value.toString());
+};
+
+const isZeroAddress = (walletAddress) => {
+  return (
+    !walletAddress ||
+    walletAddress.toLowerCase() === "0x0000000000000000000000000000000000000000"
+  );
+};
+
 const formatWalletAddress = (walletAddress) => {
+  if (isZeroAddress(walletAddress)) return "-";
   return `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`;
 };
 
 const formatDateTime = (unixTimestamp) => {
+  if (!unixTimestamp) return "-";
+
   return new Intl.DateTimeFormat("en-SG", {
     timeZone: "Asia/Singapore",
     day: "2-digit",
@@ -78,8 +82,9 @@ const formatDateTime = (unixTimestamp) => {
 };
 
 const formatWeiToEth = (weiValue) => {
-  const isNegative = weiValue.toString().startsWith("-");
-  const cleanValue = isNegative ? weiValue.toString().slice(1) : weiValue;
+  const weiString = weiValue.toString();
+  const isNegative = weiString.startsWith("-");
+  const cleanValue = isNegative ? weiString.slice(1) : weiString;
 
   const wei = BigInt(cleanValue);
   const ether = 10n ** 18n;
@@ -92,33 +97,382 @@ const formatWeiToEth = (weiValue) => {
   } ETH`;
 };
 
+const getBlockchainErrorMessage = (error) => {
+  return [
+    error?.reason,
+    error?.shortMessage,
+    error?.message,
+    error?.info?.error?.message,
+    error?.info?.error?.data?.message,
+  ]
+    .filter(Boolean)
+    .join(" ");
+};
+
+const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
+  const rawMessage = getBlockchainErrorMessage(error);
+
+  if (
+    rawMessage.includes("user rejected") ||
+    rawMessage.includes("User rejected") ||
+    rawMessage.includes("ACTION_REJECTED") ||
+    rawMessage.includes("denied transaction signature")
+  ) {
+    return "Transaction was cancelled in MetaMask.";
+  }
+
+  if (rawMessage.includes("WalletNotRegistered")) {
+    return "This wallet is not registered yet.";
+  }
+
+  if (rawMessage.includes("EmptyUsername")) {
+    return "Username cannot be empty.";
+  }
+
+  if (rawMessage.includes("UsernameTooLong")) {
+    return "Username is too long.";
+  }
+
+  if (rawMessage.includes("NotOrganiser")) {
+    return "Only the organiser can perform this action.";
+  }
+
+  if (
+    rawMessage.includes("execution reverted") ||
+    rawMessage.includes("CALL_EXCEPTION")
+  ) {
+    return fallbackMessage;
+  }
+
+  return rawMessage || fallbackMessage;
+};
+
+const mapUserProfileFromContract = (profile, fallbackWalletAddress) => {
+  const userTypeValue = toNumber(profile.usertype ?? profile[2]);
+  const schoolValue = toNumber(profile.school ?? profile[3]);
+
+  return {
+    WalletAddress: profile.WalletAddress ?? profile[0] ?? fallbackWalletAddress,
+    Username: profile.Username ?? profile[1],
+    UserType: userTypeLabels[userTypeValue] || "Unknown",
+    School: schoolLabels[schoolValue] || "Others",
+    IsRegistered: Boolean(profile.IsRegistered ?? profile[4]),
+    RegisteredAt: toNumber(profile.RegisteredAt ?? profile[5]),
+    IsOrganiser: false,
+    IsStallOwner: false,
+  };
+};
+
+const mapWalletTransactionFromContract = (transaction) => {
+  const transactionTypeValue = toNumber(
+    transaction.transactionType ?? transaction[9],
+  );
+
+  const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
+
+  return {
+    PaymentID: toNumber(transaction.PaymentID ?? transaction[0]),
+    WithdrawalID: toNumber(transaction.WithdrawalID ?? transaction[1]),
+    StallID: toNumber(transaction.StallID ?? transaction[2]),
+    CCNDayID: toNumber(transaction.CCNDayID ?? transaction[3]),
+    CustomerWallet: transaction.CustomerWallet ?? transaction[4],
+    StallOwnerWallet: transaction.StallOwnerWallet ?? transaction[5],
+    Amount: (transaction.Amount ?? transaction[6]).toString(),
+    SignedAmount: signedAmount,
+    TransactionAt: toNumber(transaction.TransactionAt ?? transaction[8]),
+    transactionType:
+      transactionTypeLabels[transactionTypeValue] || "Transaction",
+    amountType: BigInt(signedAmount) < 0n ? "negative" : "positive",
+  };
+};
+
 const ProfilePage = () => {
-  const [userProfile, setUserProfile] = useState(mockUserProfile);
-  const [usernameForm, setUsernameForm] = useState(mockUserProfile.Username);
+  const {
+    walletAddress,
+    usersContract,
+    stallsContract,
+    paymentsContract,
+    isConnected,
+  } = useWeb3();
+
+  const [userProfile, setUserProfile] = useState(null);
+  const [usernameForm, setUsernameForm] = useState("");
+  const [transactionHistory, setTransactionHistory] = useState([]);
+
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+
+  const [pageError, setPageError] = useState("");
+  const [transactionError, setTransactionError] = useState("");
+
   const [activeModal, setActiveModal] = useState(null);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalErrorMessage, setModalErrorMessage] = useState("");
+
+  const refreshProfilePage = async () => {
+    if (!isConnected || !walletAddress || !usersContract) {
+      setIsLoadingProfile(false);
+      setUserProfile(null);
+      setTransactionHistory([]);
+      setPageError("Please connect your wallet to view your profile.");
+      return;
+    }
+
+    try {
+      setIsLoadingProfile(true);
+      setPageError("");
+      setTransactionError("");
+
+      const authentication = await usersContract.AuthenticateMyWallet();
+
+      const isOrganiser = Boolean(
+        authentication.isOrganiser ?? authentication[3],
+      );
+
+      if (isOrganiser) {
+        const organiserWallet =
+          authentication.walletAddress ?? authentication[0] ?? walletAddress;
+
+        const organiserProfile = {
+          WalletAddress: organiserWallet,
+          Username: "Organiser",
+          UserType: "Organiser",
+          School: "-",
+          IsRegistered: true,
+          RegisteredAt: 0,
+          IsOrganiser: true,
+          IsStallOwner: false,
+        };
+
+        setUserProfile(organiserProfile);
+        setUsernameForm(organiserProfile.Username);
+      } else {
+        const contractProfile = await usersContract.GetMyProfile();
+        const mappedProfile = mapUserProfileFromContract(
+          contractProfile,
+          walletAddress,
+        );
+
+        let isApprovedStallOwner = false;
+
+        if (stallsContract) {
+          isApprovedStallOwner =
+            await stallsContract.IsWalletApprovedStallOwner(walletAddress);
+        }
+
+        const finalProfile = {
+          ...mappedProfile,
+          IsStallOwner: isApprovedStallOwner,
+        };
+
+        setUserProfile(finalProfile);
+        setUsernameForm(finalProfile.Username);
+      }
+
+      if (!paymentsContract) {
+        setTransactionHistory([]);
+        setTransactionError(
+          "Payment contract is not connected yet. Please refresh and try again.",
+        );
+        return;
+      }
+
+      try {
+        setIsLoadingTransactions(true);
+
+        const contractTransactions =
+          await paymentsContract.GetMyWalletTransactionHistory();
+
+        const mappedTransactions = contractTransactions
+          .map(mapWalletTransactionFromContract)
+          .sort((firstTransaction, secondTransaction) => {
+            return (
+              secondTransaction.TransactionAt - firstTransaction.TransactionAt
+            );
+          });
+
+        setTransactionHistory(mappedTransactions);
+      } catch (error) {
+        console.error("Wallet transaction history load error:", error);
+        setTransactionHistory([]);
+        setTransactionError(
+          "Unable to load wallet transaction history from the blockchain.",
+        );
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    } catch (error) {
+      console.error("Profile load error:", error);
+
+      setUserProfile(null);
+      setTransactionHistory([]);
+      setPageError(
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to load your profile from the blockchain.",
+        ),
+      );
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshProfilePage();
+  }, [
+    isConnected,
+    walletAddress,
+    usersContract,
+    stallsContract,
+    paymentsContract,
+  ]);
 
   const openEditUsernameModal = () => {
+    if (!userProfile || userProfile.IsOrganiser) return;
+
     setUsernameForm(userProfile.Username);
     setActiveModal("editUsername");
   };
 
   const closeModal = () => {
+    if (isUpdatingUsername) return;
+
     setActiveModal(null);
+    setModalMessage("");
+    setModalErrorMessage("");
   };
 
-  const handleUpdateUsername = (event) => {
-    event.preventDefault();
-
-    setUserProfile((currentProfile) => ({
-      ...currentProfile,
-      Username: usernameForm,
-    }));
-
+  const showSuccessModal = (message) => {
+    setModalMessage(message);
+    setModalErrorMessage("");
     setActiveModal("success");
   };
 
+  const showErrorModal = (message, errorMessage) => {
+    setModalMessage(message);
+    setModalErrorMessage(errorMessage);
+    setActiveModal("error");
+  };
+
+  const handleUpdateUsername = async (event) => {
+    event.preventDefault();
+
+    if (!usersContract || !userProfile) {
+      showErrorModal(
+        "Unable to update username.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    if (userProfile.IsOrganiser) {
+      showErrorModal(
+        "Unable to update username.",
+        "The organiser profile does not use a registered username.",
+      );
+      return;
+    }
+
+    const cleanedUsername = usernameForm.trim();
+
+    if (!cleanedUsername) {
+      showErrorModal("Unable to update username.", "Username cannot be empty.");
+      return;
+    }
+
+    if (cleanedUsername === userProfile.Username) {
+      closeModal();
+      return;
+    }
+
+    try {
+      setIsUpdatingUsername(true);
+
+      const tx = await usersContract.UpdateMyUsername(cleanedUsername);
+      await tx.wait();
+
+      setUserProfile((currentProfile) => ({
+        ...currentProfile,
+        Username: cleanedUsername,
+      }));
+
+      setUsernameForm(cleanedUsername);
+
+      await refreshProfilePage();
+
+      showSuccessModal("Success");
+    } catch (error) {
+      console.error("Update username error:", error);
+
+      showErrorModal(
+        "Unable to update username.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to update username. Please try again.",
+        ),
+      );
+    } finally {
+      setIsUpdatingUsername(false);
+    }
+  };
+
+  if (isLoadingProfile) {
+    return (
+      <div className="profile-page">
+        <section className="profile-hero-card profile-loader-card">
+          <CareLinkLoader
+            label="Loading profile..."
+            sublabel="Please wait while CareLink loads your blockchain profile."
+          />
+        </section>
+      </div>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <div className="profile-page">
+        <section className="profile-hero-card">
+          <div className="profile-avatar">
+            <UserIcon />
+          </div>
+
+          <div className="profile-identity">
+            <span className="profile-username">Profile unavailable</span>
+            <h1>{pageError}</h1>
+
+            <div className="profile-pill-row">
+              <span>Blockchain error</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="profile-page profile-theme-student">
+        <section className="profile-hero-card">
+          <div className="profile-avatar">
+            <UserIcon />
+          </div>
+
+          <div className="profile-identity">
+            <span className="profile-username">No profile found</span>
+            <h1>Please connect and register your wallet.</h1>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const profileTheme = getProfileTheme(userProfile);
+  const displayRole = getDisplayRole(userProfile);
+
   return (
-    <div className="profile-page">
+    <div className={`profile-page profile-theme-${profileTheme}`}>
       <section className="profile-hero-card">
         <div className="profile-avatar">
           <UserIcon />
@@ -132,19 +486,21 @@ const ProfilePage = () => {
           </h1>
 
           <div className="profile-pill-row">
-            <span>{userProfile.UserType}</span>
+            <span>{displayRole}</span>
             <span>{userProfile.School}</span>
           </div>
         </div>
 
-        <button
-          type="button"
-          className="profile-edit-button"
-          onClick={openEditUsernameModal}
-        >
-          <EditIcon />
-          Edit username
-        </button>
+        {!userProfile.IsOrganiser && (
+          <button
+            type="button"
+            className="profile-edit-button"
+            onClick={openEditUsernameModal}
+          >
+            <EditIcon />
+            Edit username
+          </button>
+        )}
       </section>
 
       <section className="profile-info-grid">
@@ -157,7 +513,7 @@ const ProfilePage = () => {
 
         <div className="profile-info-card">
           <span>Role</span>
-          <strong>{userProfile.UserType}</strong>
+          <strong>{displayRole}</strong>
         </div>
 
         <div className="profile-info-card">
@@ -178,63 +534,96 @@ const ProfilePage = () => {
             <h2>Wallet activity</h2>
           </div>
 
-          <p>{mockTransactionHistory.length} transactions</p>
+          <p>
+            {isLoadingTransactions
+              ? "Loading transactions..."
+              : `${transactionHistory.length} transactions`}
+          </p>
         </div>
 
-        <div className="profile-table-wrapper">
-          <table className="profile-transaction-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Payment ID</th>
-                <th>Withdrawal ID</th>
-                <th>Stall ID</th>
-                <th>CCN Day</th>
-                <th>Customer</th>
-                <th>Stall owner</th>
-                <th>Amount</th>
-                <th>Date</th>
-              </tr>
-            </thead>
+        {isLoadingTransactions ? (
+          <div className="profile-table-wrapper">
+            <CareLinkLoader
+              label="Loading transactions..."
+              sublabel="Please wait while CareLink loads your wallet activity."
+            />
+          </div>
+        ) : transactionError ? (
+          <div className="profile-table-wrapper">
+            <div className="profile-empty-state">
+              <h3>Unable to load transactions</h3>
+              <p>{transactionError}</p>
+            </div>
+          </div>
+        ) : transactionHistory.length === 0 ? (
+          <div className="profile-table-wrapper">
+            <div className="profile-empty-state">
+              <img
+                src={NoTransactionsUser}
+                alt=""
+                className="profile-empty-state-image"
+              />
 
-            <tbody>
-              {mockTransactionHistory.map((transaction, index) => (
-                <tr key={`${transaction.transactionType}-${index}`}>
-                  <td>
-                    <span className="profile-transaction-type">
-                      {transaction.transactionType}
-                    </span>
-                  </td>
+              <h3>No transactions found</h3>
 
-                  <td>{transaction.PaymentID || "-"}</td>
-                  <td>{transaction.WithdrawalID || "-"}</td>
-                  <td>{transaction.StallID}</td>
-                  <td>{transaction.CCNDayID}</td>
-
-                  <td title={transaction.CustomerWallet}>
-                    {formatWalletAddress(transaction.CustomerWallet)}
-                  </td>
-
-                  <td title={transaction.StallOwnerWallet}>
-                    {formatWalletAddress(transaction.StallOwnerWallet)}
-                  </td>
-
-                  <td
-                    className={
-                      transaction.SignedAmount.startsWith("-")
-                        ? "negative"
-                        : "positive"
-                    }
-                  >
-                    {formatWeiToEth(transaction.SignedAmount)}
-                  </td>
-
-                  <td>{formatDateTime(transaction.TransactionAt)}</td>
+              <p>
+                Your wallet does not have any payment, refund, or withdrawal
+                records yet.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="profile-table-wrapper">
+            <table className="profile-transaction-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Payment ID</th>
+                  <th>Withdrawal ID</th>
+                  <th>Stall ID</th>
+                  <th>CCN Day</th>
+                  <th>Customer</th>
+                  <th>Stall owner</th>
+                  <th>Amount</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {transactionHistory.map((transaction, index) => (
+                  <tr
+                    key={`${transaction.transactionType}-${transaction.PaymentID}-${transaction.WithdrawalID}-${transaction.TransactionAt}-${index}`}
+                  >
+                    <td>
+                      <span className="profile-transaction-type">
+                        {transaction.transactionType}
+                      </span>
+                    </td>
+
+                    <td>{transaction.PaymentID || "-"}</td>
+                    <td>{transaction.WithdrawalID || "-"}</td>
+                    <td>{transaction.StallID || "-"}</td>
+                    <td>{transaction.CCNDayID || "-"}</td>
+
+                    <td title={transaction.CustomerWallet}>
+                      {formatWalletAddress(transaction.CustomerWallet)}
+                    </td>
+
+                    <td title={transaction.StallOwnerWallet}>
+                      {formatWalletAddress(transaction.StallOwnerWallet)}
+                    </td>
+
+                    <td className={transaction.amountType}>
+                      {formatWeiToEth(transaction.SignedAmount)}
+                    </td>
+
+                    <td>{formatDateTime(transaction.TransactionAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {activeModal === "editUsername" && (
@@ -269,12 +658,17 @@ const ProfilePage = () => {
                   type="button"
                   className="profile-modal-cancel-button"
                   onClick={closeModal}
+                  disabled={isUpdatingUsername}
                 >
                   Cancel
                 </button>
 
-                <button type="submit" className="profile-modal-save-button">
-                  Save username
+                <button
+                  type="submit"
+                  className="profile-modal-save-button"
+                  disabled={isUpdatingUsername}
+                >
+                  {isUpdatingUsername ? "Saving..." : "Save username"}
                 </button>
               </div>
             </form>
@@ -282,13 +676,23 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {activeModal === "success" && (
+      {(activeModal === "success" || activeModal === "error") && (
         <div className="profile-modal-backdrop">
           <div className="profile-modal-card confirm">
-            <div className="profile-modal-heading success">
-              <span>Success</span>
-              <h2>Username has been updated.</h2>
-              <p>Your profile display name has been changed successfully.</p>
+            <div
+              className={`profile-modal-heading ${
+                activeModal === "success" ? "success" : "error"
+              }`}
+            >
+              <span>{activeModal === "success" ? "Success" : "Error"}</span>
+
+              <h2>{activeModal === "success" ? "Success" : modalMessage}</h2>
+
+              <p>
+                {activeModal === "success"
+                  ? "Username has been updated successfully."
+                  : modalErrorMessage}
+              </p>
             </div>
 
             <div className="profile-modal-actions">
@@ -297,7 +701,7 @@ const ProfilePage = () => {
                 className="profile-modal-save-button"
                 onClick={closeModal}
               >
-                Done
+                Close
               </button>
             </div>
           </div>

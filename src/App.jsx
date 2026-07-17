@@ -5,6 +5,7 @@ import Dashboard from "./Pages/Dashboard";
 import Sidebar from "./Components/Sidebar";
 import Stall from "./Pages/Stall";
 import StallHistory from "./Pages/StallHistory";
+import NotFound from "./Pages/NotFound";
 import StallTransaction from "./Pages/StallTransaction";
 import ProfilePage from "./Pages/ProfilePage";
 import ProtectedRoute from "./Components/ProtectedRoute";
@@ -19,6 +20,7 @@ import "./App.css";
 // Completed the Profile page and the Stall page, preparing to start login and integration with Blockchain - 14 july 2026
 // Implemented and connected the Blockchain mainly on Authentication and Stalls. Preparing to do more next time - 16 July 2026
 // Implemented the frotnend and modified the backend logic for my code. Preparing to do profile, withdrawl, stall history and more tomorrow, God help me - 17 July 2026
+// Implemented the rest of the pages and connected it to the blockchain. Preparing to settle Products card and transactions/payment - 18 July 2026
 
 const DashboardLayout = () => {
   return (
@@ -52,6 +54,7 @@ function App() {
               <Route path="/UserProfile" element={<ProfilePage />} />
             </Route>
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Web3Provider>
     </BrowserRouter>
