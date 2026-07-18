@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWeb3 } from "../context/Web3Context";
 import CareLinkLoader from "../components/CareLinkLoader";
 import NoCCNDay from "../assets/NoCCNDay.svg";
@@ -26,7 +27,7 @@ const schoolOptions = [
   "Humanities",
 ];
 
-const userTypeLabels = ["Customer", "Student", "Staff"];
+const userTypeLabels = ["None", "Student", "Staff", "Customer"];
 
 const schoolLabels = [
   "IIT",
@@ -136,6 +137,8 @@ const LocationIcon = () => (
 );
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   const {
     walletAddress,
     formattedWalletAddress,
@@ -203,11 +206,18 @@ const Dashboard = () => {
         const readableUserRole =
           userTypeLabels[userTypeValue] || "Registered user";
 
+        const readableSchool = schoolLabels[schoolValue] || "";
+
         setAccountRole(readableUserRole);
-        setAccountSchool(schoolLabels[schoolValue] || "");
+        setAccountSchool(readableUserRole === "Customer" ? "" : readableSchool);
 
         if (readableUserRole === "Staff") {
           setAccountTheme("staff");
+          return;
+        }
+
+        if (readableUserRole === "Customer") {
+          setAccountTheme("customer");
           return;
         }
 
@@ -362,6 +372,10 @@ const Dashboard = () => {
     stallLoadState === "error" ||
     filteredStalls.length === 0;
 
+  const handleViewStall = (stallId) => {
+    navigate(`/StallView/${stallId}`);
+  };
+
   return (
     <>
       <header className="dashboard-topbar">
@@ -500,7 +514,13 @@ const Dashboard = () => {
               </div>
             ) : (
               filteredStalls.map((stall) => (
-                <div className="dashboard-stall-card" key={stall.StallID}>
+                <button
+                  type="button"
+                  className="dashboard-stall-card"
+                  key={stall.StallID}
+                  onClick={() => handleViewStall(stall.StallID)}
+                  aria-label={`View products for ${stall.StallName}`}
+                >
                   <div className="dashboard-stall-image-container">
                     <img
                       src={stall.StallImage}
@@ -536,7 +556,7 @@ const Dashboard = () => {
                       </strong>
                     </div>
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

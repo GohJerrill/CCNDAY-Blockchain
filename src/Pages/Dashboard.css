@@ -337,6 +337,22 @@
   color: #ffb66d;
 }
 
+.dashboard-account-customer .dashboard-default-avatar {
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255, 255, 255, 0.2),
+      transparent 24%
+    ),
+    linear-gradient(135deg, #71303b, #35171d);
+  border-color: rgba(255, 91, 119, 0.32);
+}
+
+.dashboard-account-customer .dashboard-account-role {
+  background: rgba(255, 91, 119, 0.14);
+  color: #ff9bad;
+}
+
 /* MAIN */
 
 .dashboard-main {
@@ -481,10 +497,16 @@
 .dashboard-stall-card {
   min-width: 0;
   overflow: hidden;
+  padding: 0;
 
   border-radius: 19px;
   background: var(--dashboard-panel);
   border: 1px solid var(--dashboard-border);
+
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 
   box-shadow: 0 20px 55px rgba(0, 0, 0, 0.16);
 
@@ -500,6 +522,11 @@
   border-color: rgba(80, 214, 170, 0.24);
   background: var(--dashboard-panel-hover);
   box-shadow: 0 28px 65px rgba(0, 0, 0, 0.26);
+}
+
+.dashboard-stall-card:focus-visible {
+  outline: 3px solid rgba(80, 214, 170, 0.45);
+  outline-offset: 4px;
 }
 
 .dashboard-stall-image-container {

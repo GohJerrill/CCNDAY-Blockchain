@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
 const DashboardIcon = () => (
@@ -40,14 +40,6 @@ const UserIcon = () => (
   </svg>
 );
 
-const LogoutIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M10 4H5v16h5" />
-    <path d="M14 8l4 4-4 4" />
-    <path d="M18 12H9" />
-  </svg>
-);
-
 const ThemeIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="4" />
@@ -66,8 +58,6 @@ const getSidebarButtonClass = ({ isActive }) =>
   isActive ? "dashboard-sidebar-button active" : "dashboard-sidebar-button";
 
 const Sidebar = () => {
-  const location = useLocation();
-  const isProfileActive = location.pathname === "/UserProfile";
 
   return (
     <aside className="dashboard-sidebar">
@@ -110,39 +100,15 @@ const Sidebar = () => {
           <StallHistoryIcon />
         </NavLink>
 
-        <div className="dashboard-profile-navigation">
-          <button
-            type="button"
-            className={
-              isProfileActive
-                ? "dashboard-sidebar-button active"
-                : "dashboard-sidebar-button"
-            }
-            aria-label="Account options"
-            data-tooltip="Account"
-          >
-            <UserIcon />
-          </button>
-
-          <div className="dashboard-profile-menu">
-            <div className="dashboard-profile-menu-heading">
-              Account options
-            </div>
-
-            <NavLink to="/UserProfile" className="dashboard-profile-menu-item">
-              <UserIcon />
-              <span>Profile</span>
-            </NavLink>
-
-            <button
-              type="button"
-              className="dashboard-profile-menu-item logout"
-            >
-              <LogoutIcon />
-              <span>Log out</span>
-            </button>
-          </div>
-        </div>
+        <NavLink
+          to="/UserProfile"
+          end
+          className={getSidebarButtonClass}
+          aria-label="Profile"
+          data-tooltip="Profile"
+        >
+          <UserIcon />
+        </NavLink>
       </nav>
 
       <button

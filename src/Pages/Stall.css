@@ -179,7 +179,7 @@
   gap: 14px;
 }
 
-.stall-event-date-grid div {
+.stall-event-date-grid > div:not(.stall-eligible-schools-panel) {
   padding: 15px;
 
   border-radius: 16px;
@@ -187,7 +187,7 @@
   border: 1px solid var(--dashboard-border);
 }
 
-.stall-event-date-grid span {
+.stall-event-date-grid > div:not(.stall-eligible-schools-panel) > span {
   display: block;
   margin-bottom: 6px;
 
@@ -197,7 +197,7 @@
   text-transform: uppercase;
 }
 
-.stall-event-date-grid strong {
+.stall-event-date-grid > div:not(.stall-eligible-schools-panel) > strong {
   color: rgba(255, 255, 255, 0.84);
   font-family: "Inter", system-ui, sans-serif;
   font-size: 0.9rem;
@@ -1281,6 +1281,71 @@
   font-size: 0.86rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.stall-eligible-schools-panel {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding: 24px 22px;
+
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--dashboard-border);
+}
+
+.stall-eligible-schools-panel > span {
+  display: block;
+  margin-bottom: 16px;
+
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.stall-eligible-school-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+}
+
+.stall-event-date-grid .stall-eligible-school-list {
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.stall-eligible-school-list strong {
+  padding: 12px 20px;
+
+  border-radius: 999px;
+  background: rgba(80, 214, 170, 0.14);
+  color: var(--dashboard-accent);
+
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.stall-eligible-schools-panel p {
+  margin: 0;
+
+  color: var(--dashboard-muted);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-align: center;
 }
 
 @media (max-width: 620px) {

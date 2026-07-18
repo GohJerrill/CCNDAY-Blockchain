@@ -4,7 +4,7 @@ import { useWeb3 } from "../context/Web3Context";
 import NoTransactionsUser from "../assets/NoTransactionsUser.svg";
 import "./ProfilePage.css";
 
-const userTypeLabels = ["Customer", "Student", "Staff"];
+const userTypeLabels = ["None", "Student", "Staff", "Customer"];
 
 const schoolLabels = [
   "IIT",
@@ -16,6 +16,13 @@ const schoolLabels = [
   "Others",
 ];
 
+const staffUpgradeSchoolOptions = schoolLabels
+  .map((school, index) => ({
+    label: school,
+    value: index,
+  }))
+  .filter((school) => school.label !== "Others");
+
 const transactionTypeLabels = ["Payment", "Refund", "Withdrawal"];
 
 const getProfileTheme = (profile) => {
@@ -24,6 +31,7 @@ const getProfileTheme = (profile) => {
   if (profile.IsOrganiser) return "organiser";
   if (profile.IsStallOwner) return "stall-owner";
   if (profile.UserType === "Staff") return "staff";
+  if (profile.UserType === "Customer") return "customer";
 
   return "student";
 };
@@ -137,6 +145,14 @@ const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
     return "Only the organiser can perform this action.";
   }
 
+  if (rawMessage.includes("StaffNotWhitelisted")) {
+    return "This wallet is not currently whitelisted as staff.";
+  }
+
+  if (rawMessage.includes("NotStudentOrCustomer")) {
+    return "Only a student or customer profile can be upgraded to staff.";
+  }
+
   if (
     rawMessage.includes("execution reverted") ||
     rawMessage.includes("CALL_EXCEPTION")
@@ -151,15 +167,20 @@ const mapUserProfileFromContract = (profile, fallbackWalletAddress) => {
   const userTypeValue = toNumber(profile.usertype ?? profile[2]);
   const schoolValue = toNumber(profile.school ?? profile[3]);
 
+  const readableUserType = userTypeLabels[userTypeValue] || "Unknown";
+  const readableSchool = schoolLabels[schoolValue] || "Others";
+
   return {
     WalletAddress: profile.WalletAddress ?? profile[0] ?? fallbackWalletAddress,
     Username: profile.Username ?? profile[1],
-    UserType: userTypeLabels[userTypeValue] || "Unknown",
-    School: schoolLabels[schoolValue] || "Others",
+    UserType: readableUserType,
+    School: readableUserType === "Customer" ? "-" : readableSchool,
+    SchoolValue: schoolValue,
     IsRegistered: Boolean(profile.IsRegistered ?? profile[4]),
     RegisteredAt: toNumber(profile.RegisteredAt ?? profile[5]),
     IsOrganiser: false,
     IsStallOwner: false,
+    IsStaffWhitelisted: false,
   };
 };
 
@@ -202,6 +223,8 @@ const ProfilePage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isUpgradingToStaff, setIsUpgradingToStaff] = useState(false);
+  const [selectedUpgradeSchool, setSelectedUpgradeSchool] = useState("0");
 
   const [pageError, setPageError] = useState("");
   const [transactionError, setTransactionError] = useState("");
@@ -230,6 +253,10 @@ const ProfilePage = () => {
         authentication.isOrganiser ?? authentication[3],
       );
 
+      const isStaffWhitelisted = Boolean(
+        authentication.isStaffWhitelisted ?? authentication[5],
+      );
+
       if (isOrganiser) {
         const organiserWallet =
           authentication.walletAddress ?? authentication[0] ?? walletAddress;
@@ -239,10 +266,12 @@ const ProfilePage = () => {
           Username: "Organiser",
           UserType: "Organiser",
           School: "-",
+          SchoolValue: 6,
           IsRegistered: true,
           RegisteredAt: 0,
           IsOrganiser: true,
           IsStallOwner: false,
+          IsStaffWhitelisted: false,
         };
 
         setUserProfile(organiserProfile);
@@ -264,6 +293,7 @@ const ProfilePage = () => {
         const finalProfile = {
           ...mappedProfile,
           IsStallOwner: isApprovedStallOwner,
+          IsStaffWhitelisted: isStaffWhitelisted,
         };
 
         setUserProfile(finalProfile);
@@ -336,7 +366,7 @@ const ProfilePage = () => {
   };
 
   const closeModal = () => {
-    if (isUpdatingUsername) return;
+    if (isUpdatingUsername || isUpgradingToStaff) return;
 
     setActiveModal(null);
     setModalMessage("");
@@ -401,7 +431,7 @@ const ProfilePage = () => {
 
       await refreshProfilePage();
 
-      showSuccessModal("Success");
+      showSuccessModal("Username has been updated successfully.");
     } catch (error) {
       console.error("Update username error:", error);
 
@@ -414,6 +444,67 @@ const ProfilePage = () => {
       );
     } finally {
       setIsUpdatingUsername(false);
+    }
+  };
+
+  const openUpgradeToStaffModal = () => {
+    if (!userProfile) return;
+
+    const existingSchoolValue =
+      userProfile.SchoolValue >= 0 && userProfile.SchoolValue <= 5
+        ? String(userProfile.SchoolValue)
+        : "0";
+
+    setSelectedUpgradeSchool(existingSchoolValue);
+    setActiveModal("upgradeStaff");
+  };
+
+  const handleUpgradeToStaff = async (event) => {
+    event.preventDefault();
+
+    if (!usersContract || !userProfile) {
+      showErrorModal(
+        "Unable to activate staff profile.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    if (
+      userProfile.UserType !== "Customer" ||
+      !userProfile.IsStaffWhitelisted
+    ) {
+      showErrorModal(
+        "Unable to activate staff profile.",
+        "Your wallet must be a whitelisted customer before it can be upgraded to staff.",
+      );
+      return;
+    }
+
+    try {
+      setIsUpgradingToStaff(true);
+
+      const schoolValue = Number(selectedUpgradeSchool);
+      const tx = await usersContract.UpgradeMyProfileToStaff(schoolValue);
+
+      await tx.wait();
+      await refreshProfilePage();
+
+      showSuccessModal(
+        "Your wallet has been upgraded back to Staff successfully.",
+      );
+    } catch (error) {
+      console.error("Upgrade to staff error:", error);
+
+      showErrorModal(
+        "Unable to activate staff profile.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to activate staff profile. Please try again.",
+        ),
+      );
+    } finally {
+      setIsUpgradingToStaff(false);
     }
   };
 
@@ -471,6 +562,9 @@ const ProfilePage = () => {
   const profileTheme = getProfileTheme(userProfile);
   const displayRole = getDisplayRole(userProfile);
 
+  const canUpgradeToStaff =
+    userProfile.UserType === "Customer" && userProfile.IsStaffWhitelisted;
+
   return (
     <div className={`profile-page profile-theme-${profileTheme}`}>
       <section className="profile-hero-card">
@@ -491,16 +585,29 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {!userProfile.IsOrganiser && (
-          <button
-            type="button"
-            className="profile-edit-button"
-            onClick={openEditUsernameModal}
-          >
-            <EditIcon />
-            Edit username
-          </button>
-        )}
+        <div className="profile-action-group">
+          {!userProfile.IsOrganiser && (
+            <button
+              type="button"
+              className="profile-edit-button"
+              onClick={openEditUsernameModal}
+            >
+              <EditIcon />
+              Edit username
+            </button>
+          )}
+
+          {canUpgradeToStaff && (
+            <button
+              type="button"
+              className="profile-staff-upgrade-button"
+              onClick={openUpgradeToStaffModal}
+            >
+              <UserIcon />
+              Activate staff profile
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="profile-info-grid">
@@ -676,6 +783,63 @@ const ProfilePage = () => {
         </div>
       )}
 
+      {activeModal === "upgradeStaff" && (
+        <div className="profile-modal-backdrop">
+          <div className="profile-modal-card">
+            <div className="profile-modal-heading">
+              <span>Staff access</span>
+              <h2>Activate staff profile</h2>
+              <p>
+                Your wallet has been whitelisted by the organiser. Select your
+                staff school or department to activate your staff profile again.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleUpgradeToStaff}
+              className="profile-modal-form"
+            >
+              <label>
+                <span>Staff school / department</span>
+
+                <select
+                  value={selectedUpgradeSchool}
+                  onChange={(event) =>
+                    setSelectedUpgradeSchool(event.target.value)
+                  }
+                  disabled={isUpgradingToStaff}
+                >
+                  {staffUpgradeSchoolOptions.map((school) => (
+                    <option value={school.value} key={school.label}>
+                      {school.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="profile-modal-actions">
+                <button
+                  type="button"
+                  className="profile-modal-cancel-button"
+                  onClick={closeModal}
+                  disabled={isUpgradingToStaff}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="profile-modal-save-button"
+                  disabled={isUpgradingToStaff}
+                >
+                  {isUpgradingToStaff ? "Activating..." : "Activate staff"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {(activeModal === "success" || activeModal === "error") && (
         <div className="profile-modal-backdrop">
           <div className="profile-modal-card confirm">
@@ -689,9 +853,7 @@ const ProfilePage = () => {
               <h2>{activeModal === "success" ? "Success" : modalMessage}</h2>
 
               <p>
-                {activeModal === "success"
-                  ? "Username has been updated successfully."
-                  : modalErrorMessage}
+                {activeModal === "success" ? modalMessage : modalErrorMessage}
               </p>
             </div>
 

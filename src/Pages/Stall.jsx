@@ -305,6 +305,12 @@ const mapCCNDayFromContract = (ccnDay) => {
   };
 };
 
+const mapEligibleSchoolsFromContract = (eligibleSchools) => {
+  return eligibleSchools
+    .map((school) => schoolLabels[toNumber(school)])
+    .filter((school) => school && school !== "Others");
+};
+
 const mapStallFromContract = (stall) => {
   const stallTypeValue = toNumber(stall.stallType ?? stall[4]);
   const stallSchoolValue = toNumber(stall.StallSchool ?? stall[7]);
@@ -454,6 +460,7 @@ const Stall = () => {
   const [stallPageState, setStallPageState] = useState(stallPageStates.LOADING);
 
   const [currentCCNDay, setCurrentCCNDay] = useState(null);
+  const [eligibleSchools, setEligibleSchools] = useState([]);
   const [pageMessage, setPageMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -532,6 +539,7 @@ const Stall = () => {
 
         if (!mappedCCNDay.CCNDayID) {
           setCurrentCCNDay(null);
+          setEligibleSchools([]);
           setOwnedStall(null);
           setProducts([]);
           setWithdrawableBalance("0");
@@ -545,6 +553,20 @@ const Stall = () => {
         }
 
         setCurrentCCNDay(mappedCCNDay);
+
+        try {
+          const contractEligibleSchools =
+            await ccnDayContract.GetCCNDayEligibleSchools(
+              mappedCCNDay.CCNDayID,
+            );
+
+          setEligibleSchools(
+            mapEligibleSchoolsFromContract(contractEligibleSchools),
+          );
+        } catch (error) {
+          console.error("Eligible schools load error:", error);
+          setEligibleSchools([]);
+        }
 
         let mappedOwnedStall = null;
 
@@ -789,6 +811,20 @@ const Stall = () => {
             <strong>
               {formatDateTime(displayedCCNDay.StallRegistrationEndDateTime)}
             </strong>
+          </div>
+
+          <div className="stall-eligible-schools-panel">
+            <span>Eligible student schools</span>
+
+            {eligibleSchools.length > 0 ? (
+              <div className="stall-eligible-school-list">
+                {eligibleSchools.map((school) => (
+                  <strong key={school}>{school}</strong>
+                ))}
+              </div>
+            ) : (
+              <p>Eligible schools are not available for this CCN Day.</p>
+            )}
           </div>
         </div>
       </div>
