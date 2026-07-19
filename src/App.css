@@ -31,6 +31,46 @@
   margin-left: var(--dashboard-sidebar-width);
 }
 
+.organiser-layout-page {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  align-items: stretch;
+
+  background: #090a0f;
+  overflow: hidden;
+}
+
+.organiser-layout-workspace {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+.organiser-layout-content {
+  flex: 1;
+  min-width: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.organiser-layout-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.organiser-layout-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 @media (max-width: 780px) {
   .dashboard-page {
     --dashboard-sidebar-width: 76px;

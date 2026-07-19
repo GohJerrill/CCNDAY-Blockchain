@@ -264,16 +264,17 @@ const ProductPage = () => {
     stall?.StallOwnerWallet,
   );
 
-  const canPayToStall = isCCNDayOpen && isStallOpen && !isViewingOwnStall;
+  const canSelectProduct = isCCNDayOpen && isStallOpen && !isViewingOwnStall;
+  const canPayToStall = canSelectProduct;
 
   useEffect(() => {
-    if (isViewingOwnStall) {
+    if (!canSelectProduct) {
       setSelectedProduct(null);
     }
-  }, [isViewingOwnStall]);
+  }, [canSelectProduct]);
 
   const handleSelectProduct = (product) => {
-    if (isViewingOwnStall || product.productStatus !== "Available") {
+    if (!canSelectProduct || product.productStatus !== "Available") {
       return;
     }
 
@@ -392,6 +393,8 @@ const ProductPage = () => {
               const isSelected =
                 selectedProduct?.ProductID === product.ProductID;
               const isUnavailable = product.productStatus !== "Available";
+              const isProductSelectionDisabled =
+                isUnavailable || !canSelectProduct;
 
               return (
                 <button
@@ -403,12 +406,14 @@ const ProductPage = () => {
                         ? "product-card unavailable"
                         : isViewingOwnStall
                           ? "product-card own-stall-view"
-                          : "product-card"
+                          : !isCCNDayOpen || !isStallOpen
+                            ? "product-card payment-closed"
+                            : "product-card"
                   }
                   key={product.ProductID}
                   onClick={() => handleSelectProduct(product)}
-                  disabled={isUnavailable || isViewingOwnStall}
-                  aria-disabled={isUnavailable || isViewingOwnStall}
+                  disabled={isProductSelectionDisabled}
+                  aria-disabled={isProductSelectionDisabled}
                 >
                   <div className="product-image-wrapper">
                     <img src={product.ProductImage} alt={product.ProductName} />

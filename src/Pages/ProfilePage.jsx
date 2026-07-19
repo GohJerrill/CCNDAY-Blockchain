@@ -184,18 +184,18 @@ const mapUserProfileFromContract = (profile, fallbackWalletAddress) => {
   };
 };
 
-const mapWalletTransactionFromContract = (transaction) => {
+const mapWalletTransactionFromContract = (transaction, stallNameById = {}) => {
   const transactionTypeValue = toNumber(
     transaction.transactionType ?? transaction[9],
   );
 
+  const stallId = toNumber(transaction.StallID ?? transaction[2]);
   const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
 
   return {
     PaymentID: toNumber(transaction.PaymentID ?? transaction[0]),
     WithdrawalID: toNumber(transaction.WithdrawalID ?? transaction[1]),
-    StallID: toNumber(transaction.StallID ?? transaction[2]),
-    CCNDayID: toNumber(transaction.CCNDayID ?? transaction[3]),
+    StallName: stallNameById[stallId] || (stallId ? `Stall #${stallId}` : "-"),
     CustomerWallet: transaction.CustomerWallet ?? transaction[4],
     StallOwnerWallet: transaction.StallOwnerWallet ?? transaction[5],
     Amount: (transaction.Amount ?? transaction[6]).toString(),
@@ -314,8 +314,45 @@ const ProfilePage = () => {
         const contractTransactions =
           await paymentsContract.GetMyWalletTransactionHistory();
 
+        let stallNameById = {};
+
+        if (stallsContract && contractTransactions.length > 0) {
+          const uniqueStallIds = [
+            ...new Set(
+              contractTransactions
+                .map((transaction) =>
+                  toNumber(transaction.StallID ?? transaction[2]),
+                )
+                .filter((transactionStallId) => transactionStallId > 0),
+            ),
+          ];
+
+          const stallNameEntries = await Promise.all(
+            uniqueStallIds.map(async (transactionStallId) => {
+              try {
+                const contractStall =
+                  await stallsContract.GetStallDetails(transactionStallId);
+
+                const stallName =
+                  contractStall.StallName ??
+                  contractStall[1] ??
+                  `Stall #${transactionStallId}`;
+
+                return [transactionStallId, stallName];
+              } catch (error) {
+                console.error("Transaction stall name load error:", error);
+                return [transactionStallId, `Stall #${transactionStallId}`];
+              }
+            }),
+          );
+
+          stallNameById = Object.fromEntries(stallNameEntries);
+        }
+
         const mappedTransactions = contractTransactions
-          .map(mapWalletTransactionFromContract)
+          .map((transaction) =>
+            mapWalletTransactionFromContract(transaction, stallNameById),
+          )
           .sort((firstTransaction, secondTransaction) => {
             return (
               secondTransaction.TransactionAt - firstTransaction.TransactionAt
@@ -687,8 +724,7 @@ const ProfilePage = () => {
                   <th>Type</th>
                   <th>Payment ID</th>
                   <th>Withdrawal ID</th>
-                  <th>Stall ID</th>
-                  <th>CCN Day</th>
+                  <th>Stall</th>
                   <th>Customer</th>
                   <th>Stall owner</th>
                   <th>Amount</th>
@@ -709,8 +745,7 @@ const ProfilePage = () => {
 
                     <td>{transaction.PaymentID || "-"}</td>
                     <td>{transaction.WithdrawalID || "-"}</td>
-                    <td>{transaction.StallID || "-"}</td>
-                    <td>{transaction.CCNDayID || "-"}</td>
+                    <td>{transaction.StallName || "-"}</td>
 
                     <td title={transaction.CustomerWallet}>
                       {formatWalletAddress(transaction.CustomerWallet)}

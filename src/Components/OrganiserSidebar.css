@@ -1,0 +1,215 @@
+.organiser-sidebar {
+  width: 280px;
+  min-height: 100vh;
+  padding: 26px 20px;
+
+  position: sticky;
+  top: 0;
+
+  height: 100vh;
+  flex-shrink: 0;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 160, 64, 0.18),
+      transparent 34%
+    ),
+    rgba(17, 16, 15, 0.97);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 18px 0 55px rgba(0, 0, 0, 0.26);
+}
+
+.organiser-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 34px;
+}
+
+.organiser-sidebar-logo {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 18px;
+  box-shadow: 0 16px 36px rgba(255, 159, 67, 0.18);
+  overflow: hidden;
+}
+
+.organiser-sidebar-logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+}
+
+.organiser-sidebar-brand h2 {
+  margin: 0;
+  color: #ffffff;
+
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.organiser-sidebar-brand p {
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, 0.52);
+
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.organiser-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.organiser-sidebar-link {
+  padding: 14px 15px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  border-radius: 16px;
+  border: 1px solid transparent;
+
+  color: rgba(255, 255, 255, 0.68);
+  text-decoration: none;
+
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.91rem;
+  font-weight: 800;
+
+  transition:
+    background 0.22s ease,
+    color 0.22s ease,
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.organiser-sidebar-link:hover {
+  transform: translateX(3px);
+  background: rgba(255, 159, 67, 0.08);
+  border-color: rgba(255, 159, 67, 0.16);
+  color: #ffffff;
+}
+
+.organiser-sidebar-link.active {
+  background: rgba(255, 159, 67, 0.14);
+  border-color: rgba(255, 159, 67, 0.34);
+  color: #ffffff;
+  box-shadow: 0 14px 34px rgba(255, 159, 67, 0.13);
+}
+
+.organiser-sidebar-icon,
+.organiser-sidebar-button-icon {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: currentColor;
+}
+
+.organiser-sidebar-svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+
+.organiser-sidebar-link.active .organiser-sidebar-icon {
+  color: #ffbe76;
+}
+
+.organiser-sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.organiser-sidebar-secondary-button,
+.organiser-sidebar-logout-button {
+  width: 100%;
+  padding: 13px 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  border-radius: 15px;
+
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 900;
+  cursor: pointer;
+
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.organiser-sidebar-secondary-button {
+  border: 1px solid rgba(255, 159, 67, 0.3);
+  background: rgba(255, 159, 67, 0.1);
+  color: #ffbe76;
+}
+
+.organiser-sidebar-logout-button {
+  border: 1px solid rgba(255, 91, 119, 0.28);
+  background: rgba(255, 91, 119, 0.1);
+  color: #ff9bad;
+}
+
+.organiser-sidebar-secondary-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 159, 67, 0.16);
+  border-color: rgba(255, 159, 67, 0.42);
+  box-shadow: 0 14px 32px rgba(255, 159, 67, 0.13);
+}
+
+.organiser-sidebar-logout-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 91, 119, 0.15);
+  border-color: rgba(255, 91, 119, 0.4);
+  box-shadow: 0 14px 32px rgba(255, 91, 119, 0.11);
+}
+
+.organiser-sidebar-secondary-button:focus-visible,
+.organiser-sidebar-logout-button:focus-visible,
+.organiser-sidebar-link:focus-visible {
+  outline: 3px solid rgba(255, 159, 67, 0.38);
+  outline-offset: 4px;
+}
+
+@media (max-width: 900px) {
+  .organiser-sidebar {
+    width: 100%;
+    min-height: auto;
+    position: relative;
+  }
+
+  .organiser-sidebar-nav {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

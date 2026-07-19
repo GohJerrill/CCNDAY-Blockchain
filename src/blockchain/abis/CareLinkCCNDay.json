@@ -357,6 +357,66 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "GetAllCCNDays",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "CCNName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "CCNDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StartDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "EndDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallRegistrationStartDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "StallRegistrationEndDateTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "CreatedBy",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct CCNDay[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",

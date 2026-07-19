@@ -371,6 +371,16 @@
   line-height: 1.45;
 }
 
+.product-card.payment-closed {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.product-card.payment-closed:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .product-payment-bar button {
   min-width: 190px;
   padding: 16px 24px;

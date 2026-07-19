@@ -76,17 +76,27 @@ const RegistrationPage = () => {
 
       try {
         setIsCheckingWallet(true);
+        setFormError("");
 
-        const isAlreadyRegistered =
-          await usersContract.IsWalletRegistered(walletAddress);
+        const authProfile = await usersContract.AuthenticateMyWallet();
 
-        if (isAlreadyRegistered) {
-          navigate("/UserDashboard");
+        const isOrganiser = Boolean(authProfile.isOrganiser ?? authProfile[3]);
+        const isRegisteredUser = Boolean(
+          authProfile.isRegisteredUser ?? authProfile[4],
+        );
+        const isStaffWhitelisted = Boolean(
+          authProfile.isStaffWhitelisted ?? authProfile[5],
+        );
+
+        if (isOrganiser) {
+          navigate("/Organiser/CCNDaySetup", { replace: true });
           return;
         }
 
-        const isStaffWhitelisted =
-          await usersContract.IsWalletStaffWhitelisted(walletAddress);
+        if (isRegisteredUser) {
+          navigate("/UserDashboard", { replace: true });
+          return;
+        }
 
         setRegistrationType(isStaffWhitelisted ? "staff" : "student");
       } catch (error) {

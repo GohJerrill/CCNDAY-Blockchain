@@ -38,42 +38,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_organiserWallet",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_userContractAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_ccnDayContractAddress",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "CCNDayDoesNotExist",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "CCNDayNotEnded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "CannotDeleteStallDuringCCNDay",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "_stallId",
         "type": "uint256"
@@ -153,16 +117,6 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "CurrentCCNDayDoesNotExist",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "CurrentCCNDayNotActive",
-    "type": "error"
   },
   {
     "inputs": [
@@ -255,6 +209,57 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_organiserWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_userContractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_ccnDayContractAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayAlreadyStarted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CCNDayNotEnded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotDeleteStallDuringCCNDay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrentCCNDayNotActive",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "EligibleSchoolCannotBeOthers",
     "type": "error"
@@ -292,6 +297,11 @@
   {
     "inputs": [],
     "name": "EmptyStallName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCCNDayID",
     "type": "error"
   },
   {
@@ -822,6 +832,116 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetCCNDayStallCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_ccnDayId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetCCNDayStalls",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "StallID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "StallName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "StallImage",
+            "type": "string"
+          },
+          {
+            "internalType": "enum StallType",
+            "name": "stallType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "StallOwnerWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "StallLocation",
+            "type": "string"
+          },
+          {
+            "internalType": "enum School",
+            "name": "StallSchool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "NeedElectricalPort",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CreatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StallStatus",
+            "name": "stallStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "AllowedWithdrawal",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "CCNDayID",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "WithdrawalCompleted",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Stall[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",

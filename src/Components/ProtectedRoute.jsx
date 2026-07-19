@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useWeb3 } from "../context/Web3Context";
 
+const ORGANISER_HOME_PATH = "/Organiser/CCNDaySetup";
+const USER_HOME_PATH = "/UserDashboard";
+
 const ProtectedRoute = () => {
   const location = useLocation();
 
@@ -22,6 +25,9 @@ const ProtectedRoute = () => {
         return;
       }
 
+      setIsCheckingAccess(true);
+      setAccessStatus("checking");
+
       if (!isConnected || !walletAddress || !usersContract) {
         setAccessStatus("not-connected");
         setIsCheckingAccess(false);
@@ -29,8 +35,6 @@ const ProtectedRoute = () => {
       }
 
       try {
-        setIsCheckingAccess(true);
-
         const authProfile = await usersContract.AuthenticateMyWallet();
 
         const isOrganiser = Boolean(authProfile.isOrganiser ?? authProfile[3]);
@@ -38,7 +42,26 @@ const ProtectedRoute = () => {
           authProfile.isRegisteredUser ?? authProfile[4],
         );
 
-        if (isOrganiser || isRegisteredUser) {
+        const isOrganiserPath =
+          location.pathname === "/Organiser" ||
+          location.pathname.startsWith("/Organiser/");
+
+        if (isOrganiser) {
+          if (!isOrganiserPath) {
+            setAccessStatus("redirect-organiser");
+            return;
+          }
+
+          setAccessStatus("allowed");
+          return;
+        }
+
+        if (isRegisteredUser) {
+          if (isOrganiserPath) {
+            setAccessStatus("redirect-user");
+            return;
+          }
+
           setAccessStatus("allowed");
           return;
         }
@@ -59,7 +82,8 @@ const ProtectedRoute = () => {
     walletAddress,
     usersContract,
     authRefreshKey,
-  ]);   
+    location.pathname,
+  ]);
 
   if (!isWalletReady || isCheckingAccess) {
     return (
@@ -75,6 +99,14 @@ const ProtectedRoute = () => {
 
   if (accessStatus === "not-registered") {
     return <Navigate to="/RegisterBABY" replace state={{ from: location }} />;
+  }
+
+  if (accessStatus === "redirect-organiser") {
+    return <Navigate to={ORGANISER_HOME_PATH} replace />;
+  }
+
+  if (accessStatus === "redirect-user") {
+    return <Navigate to={USER_HOME_PATH} replace />;
   }
 
   return <Outlet />;

@@ -1,0 +1,91 @@
+.organiser-topbar {
+  width: 100%;
+  min-height: 86px;
+  padding: 22px 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+
+  background:
+    linear-gradient(135deg, rgba(255, 159, 67, 0.08), transparent 42%),
+    rgba(9, 10, 15, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px);
+}
+
+.organiser-topbar-account {
+  padding: 10px 20px;
+  justify-content: start;
+  display: flex;
+  gap: 12px;
+  border-radius: 18px;
+  background: rgba(255, 159, 67, 0.1);
+  border: 1px solid rgba(255, 159, 67, 0.22);
+  box-shadow: 0 16px 36px rgba(255, 159, 67, 0.09);
+}
+
+.organiser-topbar-avatar {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ff9f43, #ffbe76);
+  color: #1b1208;
+}
+
+.organiser-topbar-user-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.organiser-topbar-account-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.organiser-topbar-wallet {
+  max-width: 200px;
+
+  display: block;
+  color: #ffffff;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 900;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.organiser-topbar-role {
+  color: rgba(255, 255, 255, 0.58);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .organiser-topbar {
+    padding: 18px 22px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .organiser-topbar-account {
+    width: 100%;
+  }
+}

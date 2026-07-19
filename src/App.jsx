@@ -12,6 +12,14 @@ import ProductPage from "./Pages/ProductPage";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import PaymentPage from "./Pages/PaymentPage";
 import PaymentSuccessPage from "./Pages/PaymentSuccessPage";
+
+import OrganiserSidebar from "./Components/OrganiserSidebar";
+import OrganiserTopbar from "./Components/OrganiserTopbar";
+import OrganiserCCNDaySetup from "./Pages/OrganiserCCNDaySetup";
+import OrganiserStaffWhitelist from "./Pages/OrganiserStaffWhitelist";
+import OrganiserStallManagement from "./Pages/OrganiserStallManagement";
+import OrganiserCCNDayStalls from "./Pages/OrganiserCCNDayStalls";
+import OrganiserStallInformation from "./Pages/OrganiserStallInformation";
 import { Web3Provider } from "./context/Web3Context";
 import "./App.css";
 
@@ -25,6 +33,7 @@ import "./App.css";
 // Implemented the frotnend and modified the backend logic for my code. Preparing to do profile, withdrawl, stall history and more tomorrow, God help me - 17 July 2026
 // Implemented the rest of the pages and connected it to the blockchain. Preparing to settle Products card and transactions/payment - 18 July 2026
 // Implemented the Products and transactions and connected it to the blockchain. preparing for organiser implemnentation - 19 July 2026
+// Implemented the organiser flow and the organiser functionalities. Preparing for full testting and adding of additional features - 20 July 2026
 
 const DashboardLayout = () => {
   return (
@@ -33,6 +42,22 @@ const DashboardLayout = () => {
 
       <div className="dashboard-workspace">
         <Outlet />
+      </div>
+    </div>
+  );
+};
+
+const OrganiserLayout = () => {
+  return (
+    <div className="organiser-layout-page">
+      <OrganiserSidebar />
+
+      <div className="organiser-layout-workspace">
+        <OrganiserTopbar />
+
+        <div className="organiser-layout-content">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
@@ -49,6 +74,8 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/Payment/:stallId" element={<PaymentPage />} />
             <Route path="/PaymentSuccess" element={<PaymentSuccessPage />} />
+
+            {/* User/Customer Layout */}
             <Route element={<DashboardLayout />}>
               <Route path="/UserDashboard" element={<Dashboard />} />
               <Route path="/Stall" element={<Stall />} />
@@ -59,6 +86,30 @@ function App() {
               />
               <Route path="/UserProfile" element={<ProfilePage />} />
               <Route path="/StallView/:stallId" element={<ProductPage />} />
+            </Route>
+
+            {/* Organiser layout */}
+            <Route element={<OrganiserLayout />}>
+              <Route
+                path="/Organiser/CCNDaySetup"
+                element={<OrganiserCCNDaySetup />}
+              />
+              <Route
+                path="/Organiser/StaffWhitelist"
+                element={<OrganiserStaffWhitelist />}
+              />
+              <Route
+                path="/Organiser/StallManagement"
+                element={<OrganiserStallManagement />}
+              />
+              <Route
+                path="/Organiser/StallManagement/:ccnDayId"
+                element={<OrganiserCCNDayStalls />}
+              />
+              <Route
+                path="/Organiser/StallManagement/:ccnDayId/:stallId"
+                element={<OrganiserStallInformation />}
+              />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
