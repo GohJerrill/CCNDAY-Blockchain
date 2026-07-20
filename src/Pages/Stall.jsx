@@ -220,6 +220,14 @@ const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
     return "You can only set your stall status to Open or Closed.";
   }
 
+  if (rawMessage.includes("CCNDayAlreadyEnded")) {
+    return "This CCN Day has ended, so product changes and stall status changes are no longer allowed.";
+  }
+
+  if (rawMessage.includes("CCNDayAlreadyStarted")) {
+    return "This action is no longer allowed once CCN Day has started.";
+  }
+
   if (rawMessage.includes("OnlyStallOwner")) {
     return "Only the stall owner can perform this action.";
   }
@@ -475,6 +483,7 @@ const Stall = () => {
   });
 
   const [ownedStall, setOwnedStall] = useState(null);
+  const [isOwnedStallCCNDayEnded, setIsOwnedStallCCNDayEnded] = useState(false);
   const [products, setProducts] = useState([]);
 
   const [stallTransactions, setStallTransactions] = useState([]);
@@ -541,6 +550,7 @@ const Stall = () => {
           setCurrentCCNDay(null);
           setEligibleSchools([]);
           setOwnedStall(null);
+          setIsOwnedStallCCNDayEnded(false);
           setProducts([]);
           setWithdrawableBalance("0");
           setCanWithdrawStallPayments(false);
@@ -583,6 +593,12 @@ const Stall = () => {
 
         if (mappedOwnedStall) {
           setOwnedStall(mappedOwnedStall);
+
+          const hasOwnedStallCCNDayEnded =
+            await stallsContract.IsStallCCNDayEnded(mappedOwnedStall.StallID);
+
+          setIsOwnedStallCCNDayEnded(Boolean(hasOwnedStallCCNDayEnded));
+
           setStallStatusForm(
             mappedOwnedStall.stallStatus === "Closed" ? "Closed" : "Open",
           );
@@ -675,6 +691,7 @@ const Stall = () => {
         }
 
         setOwnedStall(null);
+        setIsOwnedStallCCNDayEnded(false);
         setProducts([]);
         setStallTransactions([]);
         setStallTransactionsError("");
@@ -729,6 +746,7 @@ const Stall = () => {
         if (errorType === "no-current-ccn-day") {
           setCurrentCCNDay(null);
           setOwnedStall(null);
+          setIsOwnedStallCCNDayEnded(false);
           setProducts([]);
           setStallPageState(stallPageStates.NO_CCN_DAY);
           setStallTransactions([]);
@@ -756,6 +774,24 @@ const Stall = () => {
   ]);
 
   const displayedCCNDay = currentCCNDay;
+
+  const canManageProductsAndStatus =
+    Boolean(ownedStall) &&
+    !isOwnedStallCCNDayEnded &&
+    !ownedStall.WithdrawalCompleted;
+
+  const canDeleteOwnedStall =
+    Boolean(ownedStall) &&
+    Boolean(currentCCNDay) &&
+    ownedStall.CCNDayID === currentCCNDay.CCNDayID &&
+    Math.floor(Date.now() / 1000) < currentCCNDay.StartDateTime &&
+    !ownedStall.WithdrawalCompleted;
+
+  const lockedStallManagementMessage =
+    "This CCN Day has ended, so product changes and stall status changes are no longer allowed. You can still view records and complete settlement.";
+
+  const lockedDeleteStallMessage =
+    "Stall deletion is only available before CCN Day starts. Once CCN Day has started, the stall becomes part of the event record.";
 
   const refreshStallPage = () => {
     setRefreshKey((currentKey) => currentKey + 1);
@@ -1032,11 +1068,33 @@ const Stall = () => {
   };
 
   const openEditStallModal = () => {
+    if (!canManageProductsAndStatus) {
+      showErrorModal(
+        "Stall management is locked.",
+        lockedStallManagementMessage,
+      );
+      return;
+    }
+
     setStallStatusForm(ownedStall.stallStatus);
     setActiveModal("editStall");
   };
 
   const openDeleteStallModal = () => {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    const isDeleteStillAllowed =
+      Boolean(ownedStall) &&
+      Boolean(currentCCNDay) &&
+      ownedStall.CCNDayID === currentCCNDay.CCNDayID &&
+      currentTimestamp < currentCCNDay.StartDateTime &&
+      !ownedStall.WithdrawalCompleted;
+
+    if (!isDeleteStillAllowed) {
+      showErrorModal("Stall deletion is locked.", lockedDeleteStallMessage);
+      return;
+    }
+
     setActiveModal("deleteStall");
   };
 
@@ -1119,6 +1177,14 @@ const Stall = () => {
   };
 
   const openEditProductModal = (product) => {
+    if (!canManageProductsAndStatus) {
+      showErrorModal(
+        "Product management is locked.",
+        lockedStallManagementMessage,
+      );
+      return;
+    }
+
     setSelectedProduct(product);
     setProductFormError("");
 
@@ -1134,11 +1200,27 @@ const Stall = () => {
   };
 
   const openDeleteProductModal = (product) => {
+    if (!canManageProductsAndStatus) {
+      showErrorModal(
+        "Product management is locked.",
+        lockedStallManagementMessage,
+      );
+      return;
+    }
+
     setSelectedProduct(product);
     setActiveModal("deleteProduct");
   };
 
   const openCreateProductModal = () => {
+    if (!canManageProductsAndStatus) {
+      showErrorModal(
+        "Product management is locked.",
+        lockedStallManagementMessage,
+      );
+      return;
+    }
+
     setSelectedProduct(null);
     setProductFormError("");
 
@@ -1607,23 +1689,27 @@ const Stall = () => {
                 </button>
               )}
 
-              <button
-                type="button"
-                className="stall-secondary-button"
-                onClick={openEditStallModal}
-                disabled={isStallActionInProgress}
-              >
-                Update Stall Status
-              </button>
+              {canManageProductsAndStatus && (
+                <button
+                  type="button"
+                  className="stall-secondary-button"
+                  onClick={openEditStallModal}
+                  disabled={isStallActionInProgress}
+                >
+                  Update Stall Status
+                </button>
+              )}
 
-              <button
-                type="button"
-                className="stall-danger-button"
-                onClick={openDeleteStallModal}
-                disabled={isStallActionInProgress}
-              >
-                Delete stall
-              </button>
+              {canDeleteOwnedStall && (
+                <button
+                  type="button"
+                  className="stall-danger-button"
+                  onClick={openDeleteStallModal}
+                  disabled={isStallActionInProgress}
+                >
+                  Delete stall
+                </button>
+              )}
             </div>
           </div>
 
@@ -1722,8 +1808,9 @@ const Stall = () => {
                   />
                   <h3>No products added yet</h3>
                   <p>
-                    This stall does not have any products yet. Add your first
-                    product using the green plus button.
+                    {canManageProductsAndStatus
+                      ? "This stall does not have any products yet. Add your first product using the green plus button."
+                      : "This CCN Day has ended, so product changes are no longer allowed."}
                   </p>
                 </div>
               ) : (
@@ -1740,23 +1827,25 @@ const Stall = () => {
                           loading="lazy"
                         />
 
-                        <div className="stall-product-card-actions">
-                          <button
-                            type="button"
-                            className="stall-product-edit-button"
-                            onClick={() => openEditProductModal(product)}
-                          >
-                            Edit
-                          </button>
+                        {canManageProductsAndStatus && (
+                          <div className="stall-product-card-actions">
+                            <button
+                              type="button"
+                              className="stall-product-edit-button"
+                              onClick={() => openEditProductModal(product)}
+                            >
+                              Edit
+                            </button>
 
-                          <button
-                            type="button"
-                            className="stall-product-delete-button"
-                            onClick={() => openDeleteProductModal(product)}
-                          >
-                            Delete
-                          </button>
-                        </div>
+                            <button
+                              type="button"
+                              className="stall-product-delete-button"
+                              onClick={() => openDeleteProductModal(product)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="stall-product-content">
@@ -1878,7 +1967,7 @@ const Stall = () => {
             )}
           </section>
 
-          {activeStallTab === "products" && (
+          {activeStallTab === "products" && canManageProductsAndStatus && (
             <button
               type="button"
               className="stall-floating-add-product"
@@ -2137,8 +2226,8 @@ const Stall = () => {
               <h2>Are you sure?</h2>
               <p>
                 This will attempt to delete your stall from the blockchain.
-                Deletion is not allowed while CCN Day is ongoing or when the
-                stall still has unsettled paid payments.
+                Deletion is only available before CCN Day starts. Once CCN Day
+                has started, the stall becomes part of the event record.
               </p>
             </div>
 

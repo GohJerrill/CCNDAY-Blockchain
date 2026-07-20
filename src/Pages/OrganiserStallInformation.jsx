@@ -156,6 +156,10 @@ const getReadableError = (error) => {
     return "This stall cannot be deleted while the CCN Day is ongoing.";
   }
 
+  if (rawMessage.includes("CCNDayAlreadyStarted")) {
+    return "Stall deletion is only available before CCN Day starts. Once CCN Day has started, the stall becomes part of the event record.";
+  }
+
   if (rawMessage.includes("StallHasUnsettledPaidPayments")) {
     return "This stall has unsettled paid payments, so it cannot be deleted.";
   }
@@ -179,6 +183,8 @@ const mapCCNDayFromContract = (ccnDay) => {
   return {
     id: toNumber(ccnDay.CCNDayID ?? ccnDay[0]),
     name: ccnDay.CCNName ?? ccnDay[1],
+    startTime: toNumber(ccnDay.StartDateTime ?? ccnDay[3]),
+    endTime: toNumber(ccnDay.EndDateTime ?? ccnDay[4]),
   };
 };
 
@@ -284,6 +290,12 @@ const OrganiserStallInformation = () => {
     isApprovedStall &&
     isCCNDayEnded &&
     !stall?.allowedWithdrawal &&
+    !stall?.withdrawalCompleted;
+
+  const canDeleteStall =
+    isApprovedStall &&
+    Boolean(ccnDay) &&
+    Math.floor(Date.now() / 1000) < ccnDay.startTime &&
     !stall?.withdrawalCompleted;
 
   const loadStallInformation = useCallback(async () => {
@@ -462,6 +474,21 @@ const OrganiserStallInformation = () => {
   };
 
   const handleDeleteStall = async () => {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    const isDeleteStillAllowed =
+      isApprovedStall &&
+      Boolean(ccnDay) &&
+      currentTimestamp < ccnDay.startTime &&
+      !stall?.withdrawalCompleted;
+
+    if (!isDeleteStillAllowed) {
+      showErrorModal(
+        "Stall deletion is only available before CCN Day starts. Once CCN Day has started, the stall becomes part of the event record.",
+      );
+      return;
+    }
+
     try {
       setIsSubmittingTransaction(true);
 
@@ -517,13 +544,15 @@ const OrganiserStallInformation = () => {
           </button>
         )}
 
-        <button
-          type="button"
-          className="organiser-stall-info-danger-button"
-          onClick={() => setActiveModal("delete")}
-        >
-          Delete Stall
-        </button>
+        {canDeleteStall && (
+          <button
+            type="button"
+            className="organiser-stall-info-danger-button"
+            onClick={() => setActiveModal("delete")}
+          >
+            Delete Stall
+          </button>
+        )}
       </div>
     );
   };
@@ -995,8 +1024,8 @@ const OrganiserStallInformation = () => {
                 <span>Delete Stall</span>
                 <h2>Delete this approved stall?</h2>
                 <p>
-                  This action can fail if the CCN Day is ongoing or if the stall
-                  has unsettled paid payments.
+                  This action is only available before CCN Day starts. Once CCN
+                  Day has started, the stall becomes part of the event record.
                 </p>
               </div>
             </div>
@@ -1004,20 +1033,20 @@ const OrganiserStallInformation = () => {
             <div className="organiser-stall-info-action-row">
               <button
                 type="button"
-                className="organiser-stall-info-danger-button"
-                onClick={handleDeleteStall}
-                disabled={isSubmittingTransaction}
-              >
-                {isSubmittingTransaction ? "Deleting..." : "Delete Stall"}
-              </button>
-
-              <button
-                type="button"
                 className="organiser-stall-info-secondary-button"
                 onClick={closeModal}
                 disabled={isSubmittingTransaction}
               >
                 Cancel
+              </button>
+
+              <button
+                type="button"
+                className="organiser-stall-info-danger-button"
+                onClick={handleDeleteStall}
+                disabled={isSubmittingTransaction}
+              >
+                {isSubmittingTransaction ? "Deleting..." : "Delete Stall"}
               </button>
             </div>
           </div>
@@ -1042,20 +1071,19 @@ const OrganiserStallInformation = () => {
             <div className="organiser-stall-info-action-row">
               <button
                 type="button"
-                className="organiser-stall-info-primary-button"
-                onClick={handleAllowWithdrawal}
-                disabled={isSubmittingTransaction}
-              >
-                {isSubmittingTransaction ? "Allowing..." : "Allow Withdrawal"}
-              </button>
-
-              <button
-                type="button"
                 className="organiser-stall-info-secondary-button"
                 onClick={closeModal}
                 disabled={isSubmittingTransaction}
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                className="organiser-stall-info-primary-button"
+                onClick={handleAllowWithdrawal}
+                disabled={isSubmittingTransaction}
+              >
+                {isSubmittingTransaction ? "Allowing..." : "Allow Withdrawal"}
               </button>
             </div>
           </div>
