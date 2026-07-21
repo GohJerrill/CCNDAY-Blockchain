@@ -33,6 +33,17 @@ const formatSignedWeiToEth = (signedWeiValue) => {
   } ETH`;
 };
 
+const formatSignedSGDCents = (signedCentsValue) => {
+  const signedCents = BigInt(signedCentsValue || "0");
+  const isNegative = signedCents < 0n;
+  const absoluteCents = isNegative ? -signedCents : signedCents;
+
+  const dollars = absoluteCents / 100n;
+  const centsPart = (absoluteCents % 100n).toString().padStart(2, "0");
+
+  return `${isNegative ? "-" : "+"}S$${dollars}.${centsPart}`;
+};
+
 const getTransactionDisplayId = (transaction) => {
   if (transaction.WithdrawalID > 0) {
     return `WDR-${transaction.WithdrawalID}`;
@@ -43,15 +54,29 @@ const getTransactionDisplayId = (transaction) => {
 
 const mapStallTransactionFromContract = (transaction) => {
   const transactionTypeValue = toNumber(
-    transaction.transactionType ?? transaction[9],
+    transaction.transactionType ?? transaction[11],
   );
 
   const paymentId = toNumber(transaction.PaymentID ?? transaction[0]);
   const withdrawalId = toNumber(transaction.WithdrawalID ?? transaction[1]);
   const customerWallet = transaction.CustomerWallet ?? transaction[4];
   const stallOwnerWallet = transaction.StallOwnerWallet ?? transaction[5];
+
   const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
-  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[8]);
+
+  const amountSGDCents = (
+    transaction.AmountSGDCents ??
+    transaction[8] ??
+    "0"
+  ).toString();
+
+  const signedAmountSGDCents = (
+    transaction.SignedAmountSGDCents ??
+    transaction[9] ??
+    "0"
+  ).toString();
+
+  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[10]);
 
   const mappedTransaction = {
     PaymentID: paymentId,
@@ -61,12 +86,16 @@ const mapStallTransactionFromContract = (transaction) => {
     CustomerWallet: customerWallet,
     StallOwnerWallet: stallOwnerWallet,
     SignedAmount: signedAmount,
+    AmountSGDCents: amountSGDCents,
+    SignedAmountSGDCents: signedAmountSGDCents,
     TransactionAt: transactionAt,
     transactionTypeValue,
     transactionType:
       transactionTypeLabels[transactionTypeValue] || "Transaction",
     status: transactionStatusLabels[transactionTypeValue] || "Recorded",
   };
+
+  const hasSGDAmount = BigInt(mappedTransaction.SignedAmountSGDCents) !== 0n;
 
   return {
     ...mappedTransaction,
@@ -75,10 +104,20 @@ const mapStallTransactionFromContract = (transaction) => {
       mappedTransaction.transactionType === "Withdrawal"
         ? mappedTransaction.StallOwnerWallet
         : mappedTransaction.CustomerWallet,
-    amount: formatSignedWeiToEth(mappedTransaction.SignedAmount),
+    amount: hasSGDAmount
+      ? formatSignedSGDCents(mappedTransaction.SignedAmountSGDCents)
+      : formatSignedWeiToEth(mappedTransaction.SignedAmount),
+    ethAmount: hasSGDAmount
+      ? formatSignedWeiToEth(mappedTransaction.SignedAmount)
+      : "",
     date: formatDateTime(mappedTransaction.TransactionAt),
-    amountType:
-      BigInt(mappedTransaction.SignedAmount) < 0n ? "negative" : "positive",
+    amountType: hasSGDAmount
+      ? BigInt(mappedTransaction.SignedAmountSGDCents) < 0n
+        ? "negative"
+        : "positive"
+      : BigInt(mappedTransaction.SignedAmount) < 0n
+        ? "negative"
+        : "positive",
   };
 };
 
@@ -351,7 +390,9 @@ const mapProductFromContract = (product) => {
     ProductName: product.ProductName ?? product[2],
     ProductDescription: product.ProductDescription ?? product[3],
     ProductImage: product.ProductImage ?? product[4],
-    ProductPrice: (product.ProductPrice ?? product[5]).toString(),
+    ProductPriceSGDCents: (
+      product.ProductPriceSGDCents ?? product[5]
+    ).toString(),
     productStatus: productStatusLabels[productStatusValue] || "Unavailable",
   };
 };
@@ -371,18 +412,43 @@ const formatWeiToEth = (weiValue) => {
   return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
 };
 
-const normaliseWeiInput = (weiValue) => {
-  const cleanedValue = weiValue.trim();
+const formatSGDCents = (centsValue) => {
+  const cents = BigInt(centsValue || "0");
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
 
-  if (!/^\d+$/.test(cleanedValue)) {
-    throw new Error("Product price must be a whole number in wei.");
+  return `S$${dollars}.${centsPart}`;
+};
+
+const centsToSGDInput = (centsValue) => {
+  if (centsValue === undefined || centsValue === null || centsValue === "") {
+    return "";
   }
 
-  if (BigInt(cleanedValue) <= 0n) {
-    throw new Error("Product price must be more than 0 wei.");
+  const cents = BigInt(centsValue.toString());
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `${dollars}.${centsPart}`;
+};
+
+const normaliseSGDInputToCents = (sgdValue) => {
+  const cleanedValue = sgdValue.trim();
+
+  if (!/^\d+(\.\d{1,2})?$/.test(cleanedValue)) {
+    throw new Error(
+      "Product price must be a valid SGD amount, for example 2, 2.50, or 10.00.",
+    );
   }
 
-  return cleanedValue;
+  const [dollarsPart, centsPart = ""] = cleanedValue.split(".");
+  const cents = BigInt(dollarsPart) * 100n + BigInt(centsPart.padEnd(2, "0"));
+
+  if (cents <= 0n) {
+    throw new Error("Product price must be more than S$0.00.");
+  }
+
+  return cents.toString();
 };
 
 const validateProductForm = (form) => {
@@ -441,11 +507,11 @@ const validateProductForm = (form) => {
   }
 
   try {
-    const productPriceInWei = normaliseWeiInput(productPrice);
+    const productPriceSGDCents = normaliseSGDInputToCents(productPrice);
 
     return {
       isValid: true,
-      productPriceInWei,
+      productPriceSGDCents,
     };
   } catch (error) {
     return {
@@ -485,6 +551,7 @@ const Stall = () => {
   const [ownedStall, setOwnedStall] = useState(null);
   const [isOwnedStallCCNDayEnded, setIsOwnedStallCCNDayEnded] = useState(false);
   const [products, setProducts] = useState([]);
+  const [productEthEstimates, setProductEthEstimates] = useState({});
 
   const [stallTransactions, setStallTransactions] = useState([]);
   const [isLoadingStallTransactions, setIsLoadingStallTransactions] =
@@ -772,6 +839,51 @@ const Stall = () => {
     paymentsContract,
     refreshKey,
   ]);
+
+  useEffect(() => {
+    let shouldUpdateState = true;
+
+    const loadProductEthEstimates = async () => {
+      if (!paymentsContract || products.length === 0) {
+        setProductEthEstimates({});
+        return;
+      }
+
+      try {
+        const estimateEntries = await Promise.all(
+          products.map(async (product) => {
+            try {
+              const requiredWei =
+                await paymentsContract.CalculateRequiredWeiFromSGDCents(
+                  product.ProductPriceSGDCents,
+                );
+
+              return [product.ProductID, requiredWei.toString()];
+            } catch (error) {
+              console.error("Product ETH estimate load error:", error);
+              return [product.ProductID, ""];
+            }
+          }),
+        );
+
+        if (shouldUpdateState) {
+          setProductEthEstimates(Object.fromEntries(estimateEntries));
+        }
+      } catch (error) {
+        console.error("Product ETH estimates load error:", error);
+
+        if (shouldUpdateState) {
+          setProductEthEstimates({});
+        }
+      }
+    };
+
+    loadProductEthEstimates();
+
+    return () => {
+      shouldUpdateState = false;
+    };
+  }, [paymentsContract, products]);
 
   const displayedCCNDay = currentCCNDay;
 
@@ -1192,7 +1304,7 @@ const Stall = () => {
       ProductName: product.ProductName,
       ProductDescription: product.ProductDescription,
       ProductImage: product.ProductImage,
-      ProductPrice: product.ProductPrice,
+      ProductPrice: centsToSGDInput(product.ProductPriceSGDCents),
       productStatus: product.productStatus,
     });
 
@@ -1281,7 +1393,7 @@ const Stall = () => {
         productForm.ProductName.trim(),
         productForm.ProductDescription.trim(),
         productForm.ProductImage.trim(),
-        validationResult.productPriceInWei,
+        validationResult.productPriceSGDCents,
         productStatusValue,
       );
 
@@ -1331,7 +1443,7 @@ const Stall = () => {
         productForm.ProductName.trim(),
         productForm.ProductDescription.trim(),
         productForm.ProductImage.trim(),
-        validationResult.productPriceInWei,
+        validationResult.productPriceSGDCents,
         productStatusValue,
       );
 
@@ -1400,13 +1512,25 @@ const Stall = () => {
   const isStallStatusUnchanged =
     ownedStall && stallStatusForm === ownedStall.stallStatus;
 
+  const productFormPriceSGDCents = (() => {
+    try {
+      if (!productForm.ProductPrice.trim()) {
+        return "";
+      }
+
+      return normaliseSGDInputToCents(productForm.ProductPrice);
+    } catch {
+      return "";
+    }
+  })();
+
   const isEditProductUnchanged =
     selectedProduct &&
     productForm.ProductName.trim() === selectedProduct.ProductName &&
     productForm.ProductDescription.trim() ===
       selectedProduct.ProductDescription &&
     productForm.ProductImage.trim() === selectedProduct.ProductImage &&
-    productForm.ProductPrice.trim() === selectedProduct.ProductPrice &&
+    productFormPriceSGDCents === selectedProduct.ProductPriceSGDCents &&
     productForm.productStatus === selectedProduct.productStatus;
 
   return (
@@ -1852,13 +1976,24 @@ const Stall = () => {
                         <div className="stall-product-status-row">
                           <span>{product.productStatus}</span>
                           <strong>
-                            {formatWeiToEth(product.ProductPrice)}
+                            <strong>
+                              {formatSGDCents(product.ProductPriceSGDCents)}
+                            </strong>
                           </strong>
                         </div>
 
                         <h3>{product.ProductName}</h3>
 
                         <p>{product.ProductDescription}</p>
+
+                        {productEthEstimates[product.ProductID] && (
+                          <p className="stall-product-eth-estimate">
+                            Estimated blockchain amount:{" "}
+                            {formatWeiToEth(
+                              productEthEstimates[product.ProductID],
+                            )}
+                          </p>
+                        )}
                       </div>
                     </article>
                   ))}
@@ -1921,7 +2056,11 @@ const Stall = () => {
                                   : "stall-transaction-amount positive"
                               }
                             >
-                              {transaction.amount}
+                              <strong>{transaction.amount} SGD</strong>
+
+                              {transaction.ethAmount && (
+                                <small>{transaction.ethAmount}</small>
+                              )}
                             </td>
 
                             <td>
@@ -2044,11 +2183,11 @@ const Stall = () => {
               </label> */}
 
               <label className="stall-form-field">
-                <span>Product price in wei</span>
+                <span>Product price in SGD</span>
                 <input
                   type="text"
                   name="ProductPrice"
-                  placeholder="Example: 5000000000000000"
+                  placeholder="Example: 2.50"
                   value={productForm.ProductPrice}
                   onChange={handleProductFormChange}
                 />
@@ -2160,10 +2299,11 @@ const Stall = () => {
               </label>
 
               <label className="stall-form-field">
-                <span>Product price in wei</span>
+                <span>Product price in SGD</span>
                 <input
                   type="text"
                   name="ProductPrice"
+                  placeholder="Example: 2.50"
                   value={productForm.ProductPrice}
                   onChange={handleProductFormChange}
                 />
@@ -2314,7 +2454,11 @@ const Stall = () => {
 
               <div>
                 <span>Refund amount</span>
-                <strong>{selectedTransaction.amount}</strong>
+                <strong>{selectedTransaction.amount} SGD</strong>
+
+                {selectedTransaction.ethAmount && (
+                  <small>{selectedTransaction.ethAmount}</small>
+                )}
               </div>
             </div>
 

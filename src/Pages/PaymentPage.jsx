@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
+import { MdKeyboardDoubleArrowRight } from "react-icons/md";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CareLinkLoader from "../components/CareLinkLoader";
 import { useWeb3 } from "../context/Web3Context";
@@ -37,10 +38,63 @@ const formatWeiToEth = (weiValue) => {
   const wei = BigInt(weiValue || "0");
   const ether = 10n ** 18n;
   const whole = wei / ether;
-  const fraction = (wei % ether).toString().padStart(18, "0").slice(0, 4);
+  const fraction = (wei % ether).toString().padStart(18, "0").slice(0, 6);
   const cleanedFraction = fraction.replace(/0+$/, "");
 
   return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
+};
+
+const formatSGDCents = (centsValue) => {
+  const cents = BigInt(centsValue || "0");
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `S$${dollars}.${centsPart}`;
+};
+
+const centsToSGDInput = (centsValue) => {
+  if (centsValue === undefined || centsValue === null || centsValue === "") {
+    return "";
+  }
+
+  const cents = BigInt(centsValue.toString());
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `${dollars}.${centsPart}`;
+};
+
+const parseSGDInputToCents = (inputValue) => {
+  const cleanedValue = inputValue.trim();
+
+  if (!/^\d+(\.\d{1,2})?$/.test(cleanedValue)) {
+    return "";
+  }
+
+  const [dollarsPart, centsPart = ""] = cleanedValue.split(".");
+  const cents = BigInt(dollarsPart) * 100n + BigInt(centsPart.padEnd(2, "0"));
+
+  return cents.toString();
+};
+
+const getSGDInputValidationMessage = (inputValue) => {
+  const cleanedValue = inputValue.trim();
+
+  if (!cleanedValue) {
+    return "Enter the SGD amount you want to pay.";
+  }
+
+  if (!/^\d+(\.\d{1,2})?$/.test(cleanedValue)) {
+    return "Enter a valid SGD amount, for example 2, 2.50, or 10.00.";
+  }
+
+  const amountSGDCents = parseSGDInputToCents(cleanedValue);
+
+  if (!amountSGDCents || BigInt(amountSGDCents) <= 0n) {
+    return "Payment amount must be more than S$0.00.";
+  }
+
+  return "";
 };
 
 const formatWalletAddress = (walletAddress) => {
@@ -51,6 +105,32 @@ const formatWalletAddress = (walletAddress) => {
 const isSameWalletAddress = (firstWallet, secondWallet) => {
   if (!firstWallet || !secondWallet) return false;
   return firstWallet.toLowerCase() === secondWallet.toLowerCase();
+};
+
+const getProductId = (product) => {
+  return toNumber(
+    product?.ProductID ?? product?.productID ?? product?.id ?? product?.[0],
+  );
+};
+
+const getProductName = (product) => {
+  return (
+    product?.ProductName ??
+    product?.productName ??
+    product?.name ??
+    "Selected product"
+  );
+};
+
+const getProductSGDCents = (product) => {
+  const productPrice =
+    product?.ProductPriceSGDCents ?? product?.ProductPrice ?? product?.[5];
+
+  if (productPrice === undefined || productPrice === null) {
+    return "";
+  }
+
+  return productPrice.toString();
 };
 
 const mapStallFromContract = (stall) => {
@@ -118,23 +198,47 @@ const getFriendlyPaymentErrorMessage = (error) => {
     return "The organiser cannot make stall payments.";
   }
 
-  if (rawMessage.includes("StallNotOpen")) {
+  if (rawMessage.includes("IncorrectPaymentAmount")) {
+    return "The payment amount changed before confirmation. Please refresh the payment page and try again.";
+  }
+
+  if (rawMessage.includes("InvalidOraclePrice")) {
+    return "The Chainlink oracle returned an invalid ETH/USD price. Please try again later.";
+  }
+
+  if (rawMessage.includes("StaleOraclePrice")) {
+    return "The Chainlink oracle price is too old right now. Please try again later.";
+  }
+
+  if (rawMessage.includes("CCNDayPaymentNotStarted")) {
+    return "CCN Day has not started yet, so payment is unavailable.";
+  }
+
+  if (rawMessage.includes("CCNDayPaymentEnded")) {
+    return "CCN Day has ended, so payment is unavailable.";
+  }
+
+  if (rawMessage.includes("StallNotOpenForPayment")) {
     return "This stall is not open for payment.";
   }
 
-  if (rawMessage.includes("CCNDayNotActive")) {
-    return "CCN Day is not active right now, so payment is unavailable.";
+  if (rawMessage.includes("StallNotFromCurrentCCNDay")) {
+    return "This stall is not part of the current CCN Day.";
   }
 
-  if (rawMessage.includes("PaymentAmountMustBeMoreThanZero")) {
-    return "Payment amount must be more than 0 wei.";
+  if (rawMessage.includes("InvalidPaymentAmount")) {
+    return "Payment amount must be more than S$0.00.";
+  }
+
+  if (rawMessage.includes("WalletNotRegistered")) {
+    return "Your wallet must be registered before making payment.";
   }
 
   if (
     rawMessage.includes("execution reverted") ||
     rawMessage.includes("CALL_EXCEPTION")
   ) {
-    return "The payment could not be completed. Please check the stall, CCN Day status, and payment amount.";
+    return "The payment could not be completed. Please check the stall, CCN Day status, SGD amount, and wallet balance.";
   }
 
   return rawMessage || "Unable to complete payment. Please try again.";
@@ -186,23 +290,32 @@ const PaymentPage = () => {
   const selectedProductFromState = location.state?.selectedProduct || null;
   const stallFromState = location.state?.stall || null;
 
+  const selectedProductSGDCents = getProductSGDCents(selectedProductFromState);
+
   const [stall, setStall] = useState(stallFromState);
   const [selectedProduct] = useState(selectedProductFromState);
-
   const [currentCCNDay, setCurrentCCNDay] = useState(null);
   const [walletBalanceWei, setWalletBalanceWei] = useState("0");
-  const [paymentAmountWei, setPaymentAmountWei] = useState(
-    selectedProductFromState?.ProductPrice || "",
+
+  const [paymentAmountSGD, setPaymentAmountSGD] = useState(
+    selectedProductSGDCents ? centsToSGDInput(selectedProductSGDCents) : "",
   );
+  const [amountSGDCents, setAmountSGDCents] = useState(
+    selectedProductSGDCents || "",
+  );
+  const [requiredPaymentWei, setRequiredPaymentWei] = useState("");
 
   const [dragValue, setDragValue] = useState(0);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [isLoadingOracleAmount, setIsLoadingOracleAmount] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
   const [pageError, setPageError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
   const [paymentError, setPaymentError] = useState("");
+
+  const selectedProductId = getProductId(selectedProduct);
 
   useEffect(() => {
     const loadPaymentPage = async () => {
@@ -247,6 +360,65 @@ const PaymentPage = () => {
   }, [stallId, stallsContract, ccnDayContract, stallFromState]);
 
   useEffect(() => {
+    const validationError = getSGDInputValidationMessage(paymentAmountSGD);
+
+    if (validationError) {
+      setAmountSGDCents("");
+      setRequiredPaymentWei("");
+      setIsLoadingOracleAmount(false);
+      return;
+    }
+
+    setAmountSGDCents(parseSGDInputToCents(paymentAmountSGD));
+  }, [paymentAmountSGD]);
+
+  useEffect(() => {
+    let shouldUpdateState = true;
+
+    const loadRequiredPaymentAmount = async () => {
+      if (
+        !paymentsContract ||
+        !amountSGDCents ||
+        BigInt(amountSGDCents) <= 0n
+      ) {
+        setRequiredPaymentWei("");
+        return;
+      }
+
+      try {
+        setIsLoadingOracleAmount(true);
+        setPaymentError("");
+
+        const requiredWei =
+          await paymentsContract.CalculateRequiredWeiFromSGDCents(
+            amountSGDCents,
+          );
+
+        if (!shouldUpdateState) return;
+
+        setRequiredPaymentWei(requiredWei.toString());
+      } catch (error) {
+        console.error("Required payment amount load error:", error);
+
+        if (!shouldUpdateState) return;
+
+        setRequiredPaymentWei("");
+        setPaymentError(getFriendlyPaymentErrorMessage(error));
+      } finally {
+        if (shouldUpdateState) {
+          setIsLoadingOracleAmount(false);
+        }
+      }
+    };
+
+    loadRequiredPaymentAmount();
+
+    return () => {
+      shouldUpdateState = false;
+    };
+  }, [paymentsContract, amountSGDCents]);
+
+  useEffect(() => {
     const loadWalletBalance = async () => {
       if (!isConnected || !walletAddress || !window.ethereum) {
         setWalletBalanceWei("0");
@@ -279,8 +451,6 @@ const PaymentPage = () => {
     stall?.StallOwnerWallet,
   );
 
-  const cleanedPaymentAmount = paymentAmountWei.trim();
-
   const validationMessage = useMemo(() => {
     if (!isConnected || !walletAddress) {
       return "Please connect your wallet before making payment.";
@@ -306,20 +476,30 @@ const PaymentPage = () => {
       return paymentState.message;
     }
 
-    if (!cleanedPaymentAmount) {
-      return "Enter the amount you want to pay in wei.";
+    const sgdValidationMessage = getSGDInputValidationMessage(paymentAmountSGD);
+
+    if (sgdValidationMessage) {
+      return sgdValidationMessage;
     }
 
-    if (!/^\d+$/.test(cleanedPaymentAmount)) {
-      return "Payment amount must be a whole number in wei.";
+    if (isLoadingOracleAmount) {
+      return "Calculating the required blockchain payment amount...";
     }
 
-    if (BigInt(cleanedPaymentAmount) <= 0n) {
-      return "Payment amount must be more than 0 wei.";
+    if (!amountSGDCents || BigInt(amountSGDCents) <= 0n) {
+      return "Payment amount must be more than S$0.00.";
     }
 
-    if (BigInt(cleanedPaymentAmount) > BigInt(walletBalanceWei || "0")) {
-      return "Payment amount cannot be more than your wallet balance.";
+    if (!requiredPaymentWei) {
+      return "Unable to calculate the required blockchain amount yet.";
+    }
+
+    if (BigInt(requiredPaymentWei) <= 0n) {
+      return "Required blockchain amount must be more than 0 wei.";
+    }
+
+    if (BigInt(requiredPaymentWei) > BigInt(walletBalanceWei || "0")) {
+      return "Your wallet balance is too low for this payment.";
     }
 
     return "";
@@ -330,12 +510,21 @@ const PaymentPage = () => {
     stall,
     isViewingOwnStall,
     paymentState,
-    cleanedPaymentAmount,
+    paymentAmountSGD,
+    isLoadingOracleAmount,
+    amountSGDCents,
+    requiredPaymentWei,
     walletBalanceWei,
   ]);
 
   const canDragToPay =
-    !validationMessage && !isLoadingBalance && !isPaying && Boolean(stall);
+    !validationMessage &&
+    !isLoadingBalance &&
+    !isLoadingOracleAmount &&
+    !isPaying &&
+    Boolean(stall) &&
+    Boolean(amountSGDCents) &&
+    Boolean(requiredPaymentWei);
 
   const dragProgressStyle = {
     "--drag-progress": `${dragValue}%`,
@@ -343,14 +532,21 @@ const PaymentPage = () => {
   };
 
   const handlePaymentAmountChange = (event) => {
-    setPaymentAmountWei(event.target.value);
+    setPaymentAmountSGD(event.target.value);
     setDragValue(0);
     setPaymentNotice("");
     setPaymentError("");
   };
 
   const handleConfirmPayment = async () => {
-    if (!canDragToPay || isPaying || !stall || !paymentsContract) {
+    if (
+      !canDragToPay ||
+      isPaying ||
+      !stall ||
+      !paymentsContract ||
+      !amountSGDCents ||
+      !requiredPaymentWei
+    ) {
       setDragValue(0);
       return;
     }
@@ -360,9 +556,13 @@ const PaymentPage = () => {
       setPaymentNotice("");
       setPaymentError("");
 
-      const tx = await paymentsContract.PayToStall(stall.StallID, {
-        value: BigInt(cleanedPaymentAmount),
-      });
+      const tx = await paymentsContract.PaySGDToStall(
+        stall.StallID,
+        amountSGDCents,
+        {
+          value: BigInt(requiredPaymentWei),
+        },
+      );
 
       const transactionReceipt = await tx.wait();
 
@@ -372,9 +572,12 @@ const PaymentPage = () => {
         stallName: stall.StallName,
         stallLocation: stall.StallLocation,
         stallOwnerWallet: stall.StallOwnerWallet,
-        productName: selectedProduct?.ProductName || "",
-        productId: selectedProduct?.ProductID || 0,
-        amountWei: cleanedPaymentAmount,
+        productName: selectedProduct ? getProductName(selectedProduct) : "",
+        productId: selectedProduct ? selectedProductId : 0,
+        amountWei: requiredPaymentWei,
+        amountEth: formatWeiToEth(requiredPaymentWei),
+        amountSGDCents,
+        amountSGD: formatSGDCents(amountSGDCents),
         customerWallet: walletAddress,
         transactionHash: tx.hash,
         blockNumber: transactionReceipt?.blockNumber || "",
@@ -514,43 +717,80 @@ const PaymentPage = () => {
           </section>
 
           <aside className="payment-checkout-card">
-            <span className="payment-eyebrow">Order checkout</span>
+            <span className="payment-eyebrow">Stall payment</span>
 
             <h2>Confirm payment</h2>
 
             {selectedProduct ? (
               <div className="payment-selected-product">
-                <span>Selected product</span>
-                <strong>{selectedProduct.ProductName}</strong>
-                <p>{formatWeiToEth(selectedProduct.ProductPrice)}</p>
+                <span>Selected product reference</span>
+                <strong>{getProductName(selectedProduct)}</strong>
+                <p>
+                  Product amount pre-filled as{" "}
+                  {formatSGDCents(getProductSGDCents(selectedProduct))}
+                </p>
               </div>
             ) : (
               <div className="payment-selected-product empty">
-                <span>No product selected</span>
-                <strong>Pay directly to stall</strong>
-                <p>Enter your own payment amount below.</p>
+                <span>Custom stall payment</span>
+                <strong>Pay any SGD amount to this stall</strong>
+                <p>Enter the amount you want to pay, like PayLah-style.</p>
               </div>
             )}
 
             <label className="payment-form-field">
-              <span>Payment amount in wei</span>
+              <span>Payment amount in SGD</span>
               <input
                 type="text"
-                value={paymentAmountWei}
+                value={paymentAmountSGD}
                 onChange={handlePaymentAmountChange}
-                placeholder="Example: 5000000000000000"
+                placeholder="Example: 2.50"
                 disabled={isPaying}
               />
             </label>
 
+            {/* <label className="payment-form-field">
+              <span>Required blockchain amount</span>
+              <input
+                type="text"
+                value={
+                  isLoadingOracleAmount
+                    ? "Calculating with Chainlink oracle..."
+                    : requiredPaymentWei
+                      ? `${requiredPaymentWei} wei`
+                      : ""
+                }
+                readOnly
+                disabled
+              />
+            </label> */}
+
             <div className="payment-balance-note">
+              <span>Estimated ETH payment</span>
+              <strong>
+                {isLoadingOracleAmount
+                  ? "Calculating..."
+                  : requiredPaymentWei
+                    ? formatWeiToEth(requiredPaymentWei)
+                    : "Unavailable"}
+              </strong>
+            </div>
+
+            <div className="payment-balance-note">
+              <span>SGD amount</span>
+              <strong>
+                {amountSGDCents ? formatSGDCents(amountSGDCents) : "S$0.00"}
+              </strong>
+            </div>
+
+            {/* <div className="payment-balance-note">
               <span>Your balance</span>
               <strong>
                 {isLoadingBalance
                   ? "Loading balance..."
                   : `${walletBalanceWei} wei`}
               </strong>
-            </div>
+            </div> */}
 
             {validationMessage && (
               <div className="payment-validation-message" role="alert">
@@ -581,7 +821,7 @@ const PaymentPage = () => {
                 <span>
                   {isPaying
                     ? "Processing transaction..."
-                    : "Drag to complete order"}
+                    : "Drag to complete payment"}
                 </span>
                 <strong>
                   {isPaying
@@ -601,7 +841,7 @@ const PaymentPage = () => {
                 </span>
 
                 <div className="payment-drag-arrow" aria-hidden="true">
-                  <span>➜</span>
+                  <MdKeyboardDoubleArrowRight />
                 </div>
 
                 <input

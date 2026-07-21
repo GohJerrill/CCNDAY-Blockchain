@@ -35,6 +35,7 @@ import "./App.css";
 // Implemented the Products and transactions and connected it to the blockchain. preparing for organiser implemnentation - 19 July 2026
 // Implemented the organiser flow and the organiser functionalities. Preparing for full testting and adding of additional features - 20 July 2026
 // Continually checking and squashing bugs, and preparing to implement my additional features. - 21 July 2026
+// Implemented Oracle API for SGD conversion for Sepolia. Preparing to integrate it in my frontend and implement my second additional feature - 22 July 2026
 
 const DashboardLayout = () => {
   return (

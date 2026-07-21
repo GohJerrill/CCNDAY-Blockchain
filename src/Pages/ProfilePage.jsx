@@ -76,6 +76,13 @@ const formatWalletAddress = (walletAddress) => {
   return `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`;
 };
 
+const isSameWalletAddress = (firstWallet, secondWallet) => {
+  if (!firstWallet || !secondWallet) return false;
+  if (isZeroAddress(firstWallet) || isZeroAddress(secondWallet)) return false;
+
+  return firstWallet.toLowerCase() === secondWallet.toLowerCase();
+};
+
 const formatDateTime = (unixTimestamp) => {
   if (!unixTimestamp) return "-";
 
@@ -103,6 +110,18 @@ const formatWeiToEth = (weiValue) => {
   return `${isNegative ? "-" : "+"}${whole}${
     cleanedFraction ? `.${cleanedFraction}` : ""
   } ETH`;
+};
+
+const formatSignedSGDCents = (signedCentsValue) => {
+  const centsString = signedCentsValue.toString();
+  const isNegative = centsString.startsWith("-");
+  const cleanValue = isNegative ? centsString.slice(1) : centsString;
+
+  const cents = BigInt(cleanValue);
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `${isNegative ? "-" : "+"}S$${dollars}.${centsPart}`;
 };
 
 const getBlockchainErrorMessage = (error) => {
@@ -184,26 +203,102 @@ const mapUserProfileFromContract = (profile, fallbackWalletAddress) => {
   };
 };
 
-const mapWalletTransactionFromContract = (transaction, stallNameById = {}) => {
+const getStallNameFromContract = (stall) => {
+  return stall.StallName ?? stall[1] ?? "Unknown stall";
+};
+
+const mapWalletTransactionFromContract = (
+  transaction,
+  stallNameById = {},
+  currentWalletAddress = "",
+) => {
   const transactionTypeValue = toNumber(
-    transaction.transactionType ?? transaction[9],
+    transaction.transactionType ?? transaction[11],
   );
 
   const stallId = toNumber(transaction.StallID ?? transaction[2]);
+
+  const paymentId = toNumber(transaction.PaymentID ?? transaction[0]);
+  const withdrawalId = toNumber(transaction.WithdrawalID ?? transaction[1]);
+  const ccnDayId = toNumber(transaction.CCNDayID ?? transaction[3]);
+
+  const customerWallet = transaction.CustomerWallet ?? transaction[4];
+  const stallOwnerWallet = transaction.StallOwnerWallet ?? transaction[5];
+
+  const amount = (transaction.Amount ?? transaction[6]).toString();
   const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
 
+  const amountSGDCents = (
+    transaction.AmountSGDCents ??
+    transaction[8] ??
+    "0"
+  ).toString();
+
+  const signedAmountSGDCents = (
+    transaction.SignedAmountSGDCents ??
+    transaction[9] ??
+    "0"
+  ).toString();
+
+  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[10]);
+
+  const hasSGDAmount = BigInt(signedAmountSGDCents) !== 0n;
+
+  const isCustomer = isSameWalletAddress(currentWalletAddress, customerWallet);
+
+  const isStallOwner = isSameWalletAddress(
+    currentWalletAddress,
+    stallOwnerWallet,
+  );
+
+  let transactionType =
+    transactionTypeLabels[transactionTypeValue] || "Transaction";
+
+  if (transactionTypeValue === 0) {
+    transactionType = isCustomer
+      ? "Payment made"
+      : isStallOwner
+        ? "Payment received"
+        : "Payment";
+  }
+
+  if (transactionTypeValue === 1) {
+    transactionType = isCustomer
+      ? "Refund received"
+      : isStallOwner
+        ? "Refund issued"
+        : "Refund";
+  }
+
+  if (transactionTypeValue === 2) {
+    transactionType = "Withdrawal";
+  }
+
   return {
-    PaymentID: toNumber(transaction.PaymentID ?? transaction[0]),
-    WithdrawalID: toNumber(transaction.WithdrawalID ?? transaction[1]),
-    StallName: stallNameById[stallId] || (stallId ? `Stall #${stallId}` : "-"),
-    CustomerWallet: transaction.CustomerWallet ?? transaction[4],
-    StallOwnerWallet: transaction.StallOwnerWallet ?? transaction[5],
-    Amount: (transaction.Amount ?? transaction[6]).toString(),
+    PaymentID: paymentId,
+    WithdrawalID: withdrawalId,
+    StallID: stallId,
+    StallName: stallNameById[stallId] || "-",
+    CCNDayID: ccnDayId,
+    CustomerWallet: customerWallet,
+    StallOwnerWallet: stallOwnerWallet,
+    Amount: amount,
     SignedAmount: signedAmount,
-    TransactionAt: toNumber(transaction.TransactionAt ?? transaction[8]),
-    transactionType:
-      transactionTypeLabels[transactionTypeValue] || "Transaction",
-    amountType: BigInt(signedAmount) < 0n ? "negative" : "positive",
+    AmountSGDCents: amountSGDCents,
+    SignedAmountSGDCents: signedAmountSGDCents,
+    TransactionAt: transactionAt,
+    transactionType,
+    amount: hasSGDAmount
+      ? formatSignedSGDCents(signedAmountSGDCents)
+      : formatWeiToEth(signedAmount),
+    ethAmount: hasSGDAmount ? formatWeiToEth(signedAmount) : "",
+    amountType: hasSGDAmount
+      ? BigInt(signedAmountSGDCents) < 0n
+        ? "negative"
+        : "positive"
+      : BigInt(signedAmount) < 0n
+        ? "negative"
+        : "positive",
   };
 };
 
@@ -333,15 +428,13 @@ const ProfilePage = () => {
                 const contractStall =
                   await stallsContract.GetStallDetails(transactionStallId);
 
-                const stallName =
-                  contractStall.StallName ??
-                  contractStall[1] ??
-                  `Stall #${transactionStallId}`;
-
-                return [transactionStallId, stallName];
+                return [
+                  transactionStallId,
+                  getStallNameFromContract(contractStall),
+                ];
               } catch (error) {
                 console.error("Transaction stall name load error:", error);
-                return [transactionStallId, `Stall #${transactionStallId}`];
+                return [transactionStallId, "Unknown stall"];
               }
             }),
           );
@@ -351,7 +444,11 @@ const ProfilePage = () => {
 
         const mappedTransactions = contractTransactions
           .map((transaction) =>
-            mapWalletTransactionFromContract(transaction, stallNameById),
+            mapWalletTransactionFromContract(
+              transaction,
+              stallNameById,
+              walletAddress,
+            ),
           )
           .sort((firstTransaction, secondTransaction) => {
             return (
@@ -756,7 +853,11 @@ const ProfilePage = () => {
                     </td>
 
                     <td className={transaction.amountType}>
-                      {formatWeiToEth(transaction.SignedAmount)}
+                      <strong>{transaction.amount}</strong>
+
+                      {transaction.ethAmount && (
+                        <small>{transaction.ethAmount}</small>
+                      )}
                     </td>
 
                     <td>{formatDateTime(transaction.TransactionAt)}</td>

@@ -32,14 +32,12 @@ const toNumber = (value) => {
   return Number(value.toString());
 };
 
-const formatWeiToEth = (weiValue) => {
-  const wei = BigInt(weiValue);
-  const ether = 10n ** 18n;
-  const whole = wei / ether;
-  const fraction = (wei % ether).toString().padStart(18, "0").slice(0, 4);
-  const cleanedFraction = fraction.replace(/0+$/, "");
+const formatSGDCents = (centsValue) => {
+  const cents = BigInt(centsValue || "0");
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
 
-  return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
+  return `S$${dollars}.${centsPart}`;
 };
 
 const formatWalletAddress = (walletAddress) => {
@@ -85,7 +83,9 @@ const mapProductFromContract = (product) => {
     ProductName: product.ProductName ?? product[2],
     ProductDescription: product.ProductDescription ?? product[3],
     ProductImage: product.ProductImage ?? product[4],
-    ProductPrice: (product.ProductPrice ?? product[5]).toString(),
+    ProductPriceSGDCents: (
+      product.ProductPriceSGDCents ?? product[5]
+    ).toString(),
     productStatus: productStatusLabels[productStatusValue] || "Unavailable",
   };
 };
@@ -424,7 +424,9 @@ const ProductPage = () => {
                   <div className="product-card-content">
                     <div className="product-price-row">
                       <span>Product</span>
-                      <strong>{formatWeiToEth(product.ProductPrice)}</strong>
+                      <strong>
+                        {formatSGDCents(product.ProductPriceSGDCents)}
+                      </strong>
                     </div>
 
                     <h3>{product.ProductName}</h3>
@@ -452,7 +454,7 @@ const ProductPage = () => {
               <strong>{selectedProduct.ProductName}</strong>
             </div>
 
-            <p>{formatWeiToEth(selectedProduct.ProductPrice)}</p>
+            <p>{formatSGDCents(selectedProduct.ProductPriceSGDCents)}</p>
           </div>
         )}
 
@@ -471,7 +473,7 @@ const ProductPage = () => {
             ) : selectedProduct ? (
               <strong>
                 Paying for: {selectedProduct.ProductName} ·{" "}
-                {formatWeiToEth(selectedProduct.ProductPrice)}
+                {formatSGDCents(selectedProduct.ProductPriceSGDCents)}
               </strong>
             ) : (
               <strong>Select a product or pay directly to the stall.</strong>

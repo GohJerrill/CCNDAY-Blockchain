@@ -59,7 +59,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_productPrice",
+        "name": "_productPriceSGDCents",
         "type": "uint256"
       },
       {
@@ -194,7 +194,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_productPrice",
+        "name": "_productPriceSGDCents",
         "type": "uint256"
       },
       {
@@ -231,6 +231,11 @@
   },
   {
     "inputs": [],
+    "name": "CCNDayAlreadyEnded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "CCNDayAlreadyStarted",
     "type": "error"
   },
@@ -242,11 +247,6 @@
   {
     "inputs": [],
     "name": "CCNDayNotEnded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "CannotDeleteStallDuringCCNDay",
     "type": "error"
   },
   {
@@ -1244,6 +1244,35 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetProductPaymentDetails",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "productPriceSGDCents",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum ProductStatus",
+        "name": "productStatus",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "_stallId",
         "type": "uint256"
       }
@@ -1684,7 +1713,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "ProductPrice",
+        "name": "ProductPriceSGDCents",
         "type": "uint256"
       },
       {

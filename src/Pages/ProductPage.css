@@ -371,6 +371,13 @@
   line-height: 1.45;
 }
 
+.product-eth-estimate {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.68;
+}
+
 .product-card.payment-closed {
   cursor: not-allowed;
   opacity: 0.62;

@@ -20,6 +20,11 @@
         "internalType": "address",
         "name": "_stallContractAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_ethUsdPriceFeedAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -52,6 +57,27 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "RequiredWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "SentWei",
+        "type": "uint256"
+      }
+    ],
+    "name": "IncorrectPaymentAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidOraclePrice",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -94,6 +120,25 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PayForProduct",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "PaymentDoesNotExist",
     "type": "error"
@@ -102,6 +147,30 @@
     "inputs": [],
     "name": "PaymentNotPaid",
     "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amountSGDCents",
+        "type": "uint256"
+      }
+    ],
+    "name": "PaySGDToStall",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -123,6 +192,11 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "ProductNotAvailable",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -134,6 +208,11 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "StaleOraclePrice",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -200,6 +279,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "AmountPaid",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "AmountPaidSGDCents",
         "type": "uint256"
       }
     ],
@@ -289,6 +374,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amountSGDCents",
+        "type": "uint256"
+      }
+    ],
+    "name": "CalculateRequiredWeiFromSGDCents",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "ccnDayContract",
     "outputs": [
@@ -315,6 +419,32 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ethUsdPriceFeed",
+    "outputs": [
+      {
+        "internalType": "contract AggregatorV3Interface",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetLatestETHUSDPrice",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -364,6 +494,16 @@
           {
             "internalType": "int256",
             "name": "SignedAmount",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "AmountSGDCents",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmountSGDCents",
             "type": "int256"
           },
           {
@@ -433,6 +573,16 @@
           },
           {
             "internalType": "uint256",
+            "name": "AmountSGDCents",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmountSGDCents",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
             "name": "TransactionAt",
             "type": "uint256"
           },
@@ -457,6 +607,35 @@
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_productId",
+        "type": "uint256"
+      }
+    ],
+    "name": "GetRequiredWeiForProduct",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "stallId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "productPriceSGDCents",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requiredWei",
         "type": "uint256"
       }
     ],
@@ -536,6 +715,16 @@
           },
           {
             "internalType": "uint256",
+            "name": "AmountSGDCents",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "SignedAmountSGDCents",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
             "name": "TransactionAt",
             "type": "uint256"
           },
@@ -586,6 +775,19 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ORACLE_STALE_TIME_LIMIT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -655,6 +857,11 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "AmountPaidSGDCents",
+        "type": "uint256"
+      },
+      {
         "internalType": "enum PaymentStatus",
         "name": "paymentStatus",
         "type": "uint8"
@@ -671,6 +878,19 @@
         "internalType": "contract ICareLinkStallsForPayments",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "USD_TO_SGD_RATE_8_DECIMALS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
