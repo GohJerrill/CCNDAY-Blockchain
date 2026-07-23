@@ -10,6 +10,7 @@ const STALL_STATUS = {
   Open: 1,
   Closed: 2,
   Rejected: 3,
+  Expired: 4,
 };
 
 const STALL_TYPE_LABELS = {
@@ -63,6 +64,7 @@ const getStallStatusLabel = (stallStatus) => {
   if (statusValue === STALL_STATUS.Open) return "Approved / Open";
   if (statusValue === STALL_STATUS.Closed) return "Approved / Closed";
   if (statusValue === STALL_STATUS.Rejected) return "Rejected";
+  if (statusValue === STALL_STATUS.Expired) return "Expired";
 
   return "Unknown";
 };
@@ -72,6 +74,7 @@ const getStallStatusClass = (stallStatus) => {
 
   if (statusValue === STALL_STATUS.Pending) return "pending";
   if (statusValue === STALL_STATUS.Rejected) return "rejected";
+  if (statusValue === STALL_STATUS.Expired) return "expired";
 
   return "approved";
 };
@@ -177,6 +180,10 @@ const OrganiserCCNDayStalls = () => {
     return stalls.filter((stall) => stall.status === STALL_STATUS.Rejected);
   }, [stalls]);
 
+  const expiredStalls = useMemo(() => {
+    return stalls.filter((stall) => stall.status === STALL_STATUS.Expired);
+  }, [stalls]);
+
   const activeTabStalls = useMemo(() => {
     if (selectedTab === "approved") {
       return approvedStalls;
@@ -186,8 +193,18 @@ const OrganiserCCNDayStalls = () => {
       return pendingStalls;
     }
 
+    if (selectedTab === "expired") {
+      return expiredStalls;
+    }
+
     return rejectedStalls;
-  }, [selectedTab, approvedStalls, pendingStalls, rejectedStalls]);
+  }, [
+    selectedTab,
+    approvedStalls,
+    pendingStalls,
+    rejectedStalls,
+    expiredStalls,
+  ]);
 
   const loadCCNDayStalls = useCallback(async () => {
     if (!ccnDayContract || !stallsContract) {
@@ -255,6 +272,13 @@ const OrganiserCCNDayStalls = () => {
         title: "There are no rejected stalls for this CCN Day.",
         description:
           "Rejected stall applications will appear here after the organiser rejects an application.",
+      },
+
+      expired: {
+        label: "No Expired Stalls",
+        title: "There are no expired stall applications for this CCN Day.",
+        description:
+          "Expired stall applications will appear here when pending applications are not approved before CCN Day starts.",
       },
     };
 
@@ -368,7 +392,7 @@ const OrganiserCCNDayStalls = () => {
           <h1>{ccnDay?.name || "CCN Day Stalls"}</h1>
           <p>
             {ccnDay?.description ||
-              "Review pending and approved stalls for the selected CCN Day."}
+              "Review approved, pending, rejected, and expired stalls for the selected CCN Day."}
           </p>
         </div>
 
@@ -438,7 +462,7 @@ const OrganiserCCNDayStalls = () => {
               Pending Stalls
               <span>{pendingStalls.length}</span>
             </button>
-            
+
             <button
               type="button"
               className={selectedTab === "rejected" ? "active" : ""}
@@ -446,6 +470,15 @@ const OrganiserCCNDayStalls = () => {
             >
               Rejected Stalls
               <span>{rejectedStalls.length}</span>
+            </button>
+
+            <button
+              type="button"
+              className={selectedTab === "expired" ? "active" : ""}
+              onClick={() => setSelectedTab("expired")}
+            >
+              Expired Stalls
+              <span>{expiredStalls.length}</span>
             </button>
           </section>
 

@@ -9,7 +9,7 @@
 }
 
 .BRUH {
-  text-wrap:nowrap;
+  text-wrap: nowrap;
 }
 
 .stall-history-kicker {
@@ -46,6 +46,19 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
+}
+
+.stall-history-earned-amount strong {
+  display: block;
+  font-weight: 900;
+}
+
+.stall-history-earned-amount span {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.65;
 }
 
 .stall-history-card {

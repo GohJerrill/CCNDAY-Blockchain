@@ -334,6 +334,27 @@
   color: #ff8ea2;
 }
 
+.stall-transaction-total-eth {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.65;
+}
+
+.stall-transaction-table td strong {
+  display: block;
+  font-weight: 800;
+}
+
+.stall-transaction-table td small {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.68;
+}
+
 @media (max-width: 1180px) {
   .stall-transaction-hero {
     grid-template-columns: 1fr;

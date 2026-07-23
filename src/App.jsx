@@ -36,6 +36,7 @@ import "./App.css";
 // Implemented the organiser flow and the organiser functionalities. Preparing for full testting and adding of additional features - 20 July 2026
 // Continually checking and squashing bugs, and preparing to implement my additional features. - 21 July 2026
 // Implemented Oracle API for SGD conversion for Sepolia. Preparing to integrate it in my frontend and implement my second additional feature - 22 July 2026
+// Implemented and squash some bugs in our application. Preparing to implement the second additional feature - 24 July 2026
 
 const DashboardLayout = () => {
   return (

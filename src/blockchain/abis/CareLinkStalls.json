@@ -41,6 +41,19 @@
         "internalType": "uint256",
         "name": "_stallId",
         "type": "uint256"
+      }
+    ],
+    "name": "CompleteMyExpiredPendingStall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stallId",
+        "type": "uint256"
       },
       {
         "internalType": "string",
@@ -364,6 +377,11 @@
   },
   {
     "inputs": [],
+    "name": "OnlyPendingStallCanBeExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "OnlyPendingStallCanBeRejected",
     "type": "error"
   },
@@ -380,6 +398,11 @@
   {
     "inputs": [],
     "name": "OwnerCanOnlySetOpenOrClosed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PendingStallDecisionWindowStillOpen",
     "type": "error"
   },
   {
@@ -1720,25 +1743,6 @@
         "internalType": "enum ProductStatus",
         "name": "productStatus",
         "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "StallIDList",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",

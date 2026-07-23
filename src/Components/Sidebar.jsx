@@ -40,20 +40,6 @@ const UserIcon = () => (
   </svg>
 );
 
-const ThemeIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2" />
-    <path d="M12 20v2" />
-    <path d="M4.93 4.93 6.34 6.34" />
-    <path d="m17.66 17.66 1.41 1.41" />
-    <path d="M2 12h2" />
-    <path d="M20 12h2" />
-    <path d="m4.93 19.07 1.41-1.41" />
-    <path d="m17.66 6.34 1.41-1.41" />
-  </svg>
-);
-
 const getSidebarButtonClass = ({ isActive }) =>
   isActive ? "dashboard-sidebar-button active" : "dashboard-sidebar-button";
 
@@ -110,15 +96,6 @@ const Sidebar = () => {
           <UserIcon />
         </NavLink>
       </nav>
-
-      <button
-        type="button"
-        className="dashboard-theme-button"
-        aria-label="Change display theme"
-        data-tooltip="Dark Mode"
-      >
-        <ThemeIcon />
-      </button>
     </aside>
   );
 };

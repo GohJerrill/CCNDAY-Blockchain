@@ -522,13 +522,13 @@
 }
 
 .organiser-stall-info-product-status.available {
-  background: rgba(255, 159, 67, 0.15);
+  background: rgb(16, 8, 0);
   color: #ffbe76;
   border: 1px solid rgba(255, 159, 67, 0.25);
 }
 
 .organiser-stall-info-product-status.unavailable {
-  background: rgba(255, 91, 119, 0.14);
+  background: rgba(0, 0, 0, 0.934);
   color: #ff9bad;
   border: 1px solid rgba(255, 91, 119, 0.24);
 }
@@ -756,6 +756,19 @@
 .organiser-stall-info-main-grid.single-column
   + .organiser-stall-info-action-card {
   margin-top: 22px;
+}
+
+.organiser-stall-info-table td strong {
+  display: block;
+  font-weight: 800;
+}
+
+.organiser-stall-info-table td small {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.68;
 }
 
 @media (max-width: 980px) {

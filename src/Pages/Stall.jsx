@@ -152,6 +152,7 @@ const stallPageStates = {
   REGISTRATION_NOT_STARTED: "registrationNotStarted",
   CAN_APPLY: "canApply",
   PENDING_STALL: "pendingStall",
+  EXPIRED_PENDING_STALL: "expiredPendingStall",
   HAS_STALL: "hasStall",
   REGISTRATION_ENDED: "registrationEnded",
   CCN_DAY_ENDED: "ccnDayEnded",
@@ -178,7 +179,7 @@ const schoolLabels = [
   "Others",
 ];
 
-const stallStatusLabels = ["Pending", "Open", "Closed", "Rejected"];
+const stallStatusLabels = ["Pending", "Open", "Closed", "Rejected", "Expired"];
 const productStatusLabels = ["Available", "Unavailable"];
 
 const formatDateTime = (unixTimestamp) => {
@@ -265,6 +266,14 @@ const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
 
   if (rawMessage.includes("CCNDayAlreadyStarted")) {
     return "This action is no longer allowed once CCN Day has started.";
+  }
+
+  if (rawMessage.includes("OnlyPendingStallCanBeExpired")) {
+    return "Only an expired pending stall application can be completed this way.";
+  }
+
+  if (rawMessage.includes("PendingStallDecisionWindowStillOpen")) {
+    return "This stall application is still within the organiser decision window.";
   }
 
   if (rawMessage.includes("OnlyStallOwner")) {
@@ -580,8 +589,14 @@ const Stall = () => {
     setCanCompleteStallWithoutWithdrawal,
   ] = useState(false);
   const [withdrawableBalance, setWithdrawableBalance] = useState("0");
+
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+
   const [isCompletingStall, setIsCompletingStall] = useState(false);
+
+  const [isCompletingExpiredPendingStall, setIsCompletingExpiredPendingStall] =
+    useState(false);
+
   const [isRefundingPayment, setIsRefundingPayment] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
@@ -646,6 +661,41 @@ const Stall = () => {
         }
 
         let mappedOwnedStall = null;
+
+        try {
+          const rawWalletStallId = toNumber(
+            await stallsContract.WalletStallID(walletAddress),
+          );
+
+          if (rawWalletStallId > 0) {
+            const contractWalletStall =
+              await stallsContract.GetStallDetails(rawWalletStallId);
+
+            const mappedWalletStall = mapStallFromContract(contractWalletStall);
+
+            if (
+              mappedWalletStall.stallStatus === "Expired" &&
+              !mappedWalletStall.WithdrawalCompleted
+            ) {
+              setOwnedStall(mappedWalletStall);
+              setIsOwnedStallCCNDayEnded(false);
+              setProducts([]);
+              setProductEthEstimates({});
+              setStallTransactions([]);
+              setStallTransactionsError("");
+              setWithdrawableBalance("0");
+              setCanWithdrawStallPayments(false);
+              setCanCompleteStallWithoutWithdrawal(false);
+              setPageMessage(
+                "Your pending stall application expired because the CCN Day has already started before organiser approval.",
+              );
+              setStallPageState(stallPageStates.EXPIRED_PENDING_STALL);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Expired pending stall check error:", error);
+        }
 
         try {
           const contractOwnedStall = await stallsContract.GetMyStall();
@@ -1084,6 +1134,44 @@ const Stall = () => {
     }
   };
 
+  const handleCompleteExpiredPendingStall = async () => {
+    if (!stallsContract || !ownedStall) {
+      showErrorModal(
+        "Unable to complete expired stall.",
+        "Please reconnect your wallet and try again.",
+      );
+      return;
+    }
+
+    try {
+      setIsCompletingExpiredPendingStall(true);
+
+      const tx = await stallsContract.CompleteMyExpiredPendingStall(
+        ownedStall.StallID,
+      );
+
+      await tx.wait();
+
+      showSuccessModal(
+        "Expired stall application has been completed successfully.",
+      );
+
+      refreshStallPage();
+    } catch (error) {
+      console.error("Complete expired pending stall error:", error);
+
+      showErrorModal(
+        "Unable to complete expired stall.",
+        getFriendlyBlockchainErrorMessage(
+          error,
+          "Unable to complete this expired stall application. Please try again.",
+        ),
+      );
+    } finally {
+      setIsCompletingExpiredPendingStall(false);
+    }
+  };
+
   const handleCompleteStallWithoutWithdrawal = async () => {
     if (!paymentsContract || !ownedStall) {
       showErrorModal(
@@ -1167,6 +1255,7 @@ const Stall = () => {
       isDeletingStall ||
       isWithdrawing ||
       isCompletingStall ||
+      isCompletingExpiredPendingStall ||
       isRefundingPayment
     ) {
       return;
@@ -1618,16 +1707,84 @@ const Stall = () => {
         </>
       )}
 
+      {stallPageState === stallPageStates.EXPIRED_PENDING_STALL &&
+        ownedStall && (
+          <>
+            {renderCCNDayHero()}
+
+            <section className="stall-restriction-card">
+              <img
+                className="stall-centered-state-image"
+                src={NoCCNDay}
+                alt=""
+              />
+
+              <h2>Stall application expired</h2>
+
+              <p>
+                Your stall application was not approved before CCN Day started.
+                Please complete this expired application before continuing.
+              </p>
+            </section>
+
+            {activeModal !== "success" && (
+              <div className="stall-modal-backdrop stall-expired-modal-backdrop">
+                <div className="stall-modal-card confirm stall-expired-modal-card">
+                  <div className="stall-modal-heading error">
+                    <span>Application expired</span>
+
+                    <h2>This stall can no longer be approved.</h2>
+
+                    <p>
+                      Your stall application was still pending when CCN Day
+                      started. Since approvals are only allowed before CCN Day
+                      starts, this application must now be completed as expired.
+                    </p>
+                  </div>
+
+                  <div className="stall-owned-meta-grid">
+                    <div>
+                      <span>Stall name</span>
+                      <strong>{ownedStall.StallName}</strong>
+                    </div>
+
+                    <div>
+                      <span>Status</span>
+                      <strong>{ownedStall.stallStatus}</strong>
+                    </div>
+
+                    <div className="stall-expired-owner-wallet">
+                      <span>Owner wallet</span>
+                      <strong title={ownedStall.StallOwnerWallet}>
+                        {formatWalletAddress(ownedStall.StallOwnerWallet)}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="stall-modal-actions single">
+                    <button
+                      type="button"
+                      className="stall-modal-save-button"
+                      onClick={handleCompleteExpiredPendingStall}
+                      disabled={isCompletingExpiredPendingStall}
+                    >
+                      {isCompletingExpiredPendingStall
+                        ? "Completing..."
+                        : "Complete Stall"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
       {stallPageState === stallPageStates.PENDING_STALL && ownedStall && (
         <>
           {renderCCNDayHero()}
 
           <section className="stall-pending-panel">
             <div className="stall-pending-header">
-              <div className="stall-pending-status-icon">
-                <span />
-              </div>
-
               <div>
                 <span className="stall-section-eyebrow">
                   Pending organiser review

@@ -101,6 +101,22 @@ const formatSignedWeiToEth = (weiValue) => {
   return `${sign}${formatWeiToEth(value)}`;
 };
 
+const formatSGDCents = (centsValue) => {
+  const cents = toBigIntValue(centsValue);
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `S$${dollars}.${centsPart}`;
+};
+
+const formatSignedSGDCents = (signedCentsValue) => {
+  const value = toBigIntValue(signedCentsValue);
+  const sign = value < 0n ? "-" : "+";
+  const absoluteValue = value < 0n ? -value : value;
+
+  return `${sign}${formatSGDCents(absoluteValue)}`;
+};
+
 const getStallStatusLabel = (stallStatus) => {
   const statusValue = toNumber(stallStatus);
 
@@ -213,9 +229,42 @@ const mapStallFromContract = (stall) => {
 const mapTransactionFromContract = (transaction, index) => {
   const paymentId = toNumber(transaction.PaymentID ?? transaction[0]);
   const withdrawalId = toNumber(transaction.WithdrawalID ?? transaction[1]);
+
   const transactionType = toNumber(
-    transaction.transactionType ?? transaction[9],
+    transaction.transactionType ?? transaction[11],
   );
+
+  const signedAmount = (
+    transaction.SignedAmount ??
+    transaction[7] ??
+    "0"
+  ).toString();
+
+  const amountSGDCents = (
+    transaction.AmountSGDCents ??
+    transaction[8] ??
+    "0"
+  ).toString();
+
+  const signedAmountSGDCents = (
+    transaction.SignedAmountSGDCents ??
+    transaction[9] ??
+    "0"
+  ).toString();
+
+  const transactionAtUnix = toNumber(
+    transaction.TransactionAt ?? transaction[10],
+  );
+
+  const hasSGDAmount = toBigIntValue(signedAmountSGDCents) !== 0n;
+
+  const amountType = hasSGDAmount
+    ? toBigIntValue(signedAmountSGDCents) < 0n
+      ? "negative"
+      : "positive"
+    : toBigIntValue(signedAmount) < 0n
+      ? "negative"
+      : "positive";
 
   return {
     id: `${paymentId}-${withdrawalId}-${transactionType}-${index}`,
@@ -223,13 +272,19 @@ const mapTransactionFromContract = (transaction, index) => {
     withdrawalId,
     customerWallet: transaction.CustomerWallet ?? transaction[4],
     amount: transaction.Amount ?? transaction[6],
-    signedAmount: transaction.SignedAmount ?? transaction[7],
-    transactionAt: formatDisplayDateTimeFromUnix(
-      transaction.TransactionAt ?? transaction[8],
-    ),
+    signedAmount,
+    amountSGDCents,
+    signedAmountSGDCents,
+    displayAmount: hasSGDAmount
+      ? formatSignedSGDCents(signedAmountSGDCents)
+      : formatSignedWeiToEth(signedAmount),
+    ethAmount: hasSGDAmount ? formatSignedWeiToEth(signedAmount) : "",
+    transactionAtUnix,
+    transactionAt: formatDisplayDateTimeFromUnix(transactionAtUnix),
     transactionType,
     transactionTypeLabel:
       TRANSACTION_TYPE_LABELS[transactionType] || "Unknown transaction",
+    amountType,
   };
 };
 
@@ -242,7 +297,11 @@ const mapProductFromContract = (product) => {
     name: product.ProductName ?? product[2],
     description: product.ProductDescription ?? product[3],
     image: product.ProductImage ?? product[4],
-    price: product.ProductPrice ?? product[5],
+    priceSGDCents: (
+      product.ProductPriceSGDCents ??
+      product[5] ??
+      "0"
+    ).toString(),
     status: productStatus,
     statusLabel: PRODUCT_STATUS_LABELS[productStatus] || "Unknown",
   };
@@ -280,9 +339,23 @@ const OrganiserStallInformation = () => {
     stall?.status === STALL_STATUS.Closed;
   const isRejectedStall = stall?.status === STALL_STATUS.Rejected;
 
+  const currentUnixTimestamp = Math.floor(Date.now() / 1000);
+
+  const hasCCNDayStarted =
+    Boolean(ccnDay) && currentUnixTimestamp >= ccnDay.startTime;
+
+  const hasCCNDayEnded =
+    Boolean(ccnDay) && currentUnixTimestamp >= ccnDay.endTime;
+
+  const canDecidePendingStall =
+    isPendingStall && Boolean(ccnDay) && !hasCCNDayStarted;
+
+  const isPendingDecisionWindowClosed =
+    isPendingStall && Boolean(ccnDay) && hasCCNDayStarted;
+
   const sortedTransactions = useMemo(() => {
     return [...transactions].sort((first, second) => {
-      return second.id.localeCompare(first.id);
+      return second.transactionAtUnix - first.transactionAtUnix;
     });
   }, [transactions]);
 
@@ -415,6 +488,13 @@ const OrganiserStallInformation = () => {
   };
 
   const handleApproveStall = async () => {
+    if (!ccnDay || Math.floor(Date.now() / 1000) >= ccnDay.startTime) {
+      showErrorModal(
+        "This stall can no longer be approved because the CCN Day has already started.",
+      );
+      return;
+    }
+
     const trimmedLocation = approveLocation.trim();
 
     if (!trimmedLocation) {
@@ -455,6 +535,13 @@ const OrganiserStallInformation = () => {
   };
 
   const handleRejectStall = async () => {
+    if (!ccnDay || Math.floor(Date.now() / 1000) >= ccnDay.startTime) {
+      showErrorModal(
+        "This stall can no longer be rejected because the CCN Day has already started.",
+      );
+      return;
+    }
+
     try {
       setIsSubmittingTransaction(true);
 
@@ -560,7 +647,23 @@ const OrganiserStallInformation = () => {
   const renderActionPanel = () => {
     if (!stall) return null;
 
-    if (isPendingStall) {
+    if (isPendingDecisionWindowClosed) {
+      return (
+        <section className="organiser-stall-info-action-card">
+          <span>Decision Window Closed</span>
+
+          <h2>This stall application can no longer be approved.</h2>
+
+          <p>
+            {hasCCNDayEnded
+              ? "The CCN Day has already ended, so this pending stall cannot be approved or rejected anymore."
+              : "The CCN Day has already started, so this pending stall cannot be approved or rejected anymore."}
+          </p>
+        </section>
+      );
+    }
+
+    if (canDecidePendingStall) {
       return (
         <section className="organiser-stall-info-action-card">
           <span>Pending Application</span>
@@ -646,14 +749,12 @@ const OrganiserStallInformation = () => {
                 {sortedTransactions.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>{transaction.transactionTypeLabel}</td>
-                    <td
-                      className={
-                        toBigIntValue(transaction.signedAmount) < 0n
-                          ? "negative"
-                          : "positive"
-                      }
-                    >
-                      {formatSignedWeiToEth(transaction.signedAmount)}
+                    <td className={transaction.amountType}>
+                      <strong>{transaction.displayAmount}</strong>
+
+                      {transaction.ethAmount && (
+                        <small>{transaction.ethAmount}</small>
+                      )}
                     </td>
                     <td title={transaction.customerWallet}>
                       {transaction.customerWallet ===
@@ -725,7 +826,7 @@ const OrganiserStallInformation = () => {
 
                   <div className="organiser-stall-info-product-price">
                     <span>Price</span>
-                    <strong>{formatWeiToEth(product.price)}</strong>
+                    <strong>{formatSGDCents(product.priceSGDCents)}</strong>
                   </div>
                 </div>
               </article>

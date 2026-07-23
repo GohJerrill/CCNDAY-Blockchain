@@ -80,6 +80,26 @@ const formatWeiToEth = (weiValue) => {
   } ETH`;
 };
 
+const formatSGDCents = (centsValue) => {
+  const cents = BigInt(centsValue || "0");
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `S$${dollars}.${centsPart}`;
+};
+
+const formatSignedSGDCents = (signedCentsValue) => {
+  const centsString = signedCentsValue.toString();
+  const isNegative = centsString.startsWith("-");
+  const cleanValue = isNegative ? centsString.slice(1) : centsString;
+
+  const cents = BigInt(cleanValue);
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `${isNegative ? "-" : "+"}S$${dollars}.${centsPart}`;
+};
+
 const formatPositiveWeiToEth = (weiValue) => {
   const wei = BigInt(weiValue.toString());
   const ether = 10n ** 18n;
@@ -115,48 +135,91 @@ const mapStallFromContract = (stall) => {
 
 const mapTransactionFromContract = (transaction) => {
   const transactionTypeValue = toNumber(
-    transaction.transactionType ?? transaction[9],
+    transaction.transactionType ?? transaction[11],
   );
 
   const paymentId = toNumber(transaction.PaymentID ?? transaction[0]);
   const withdrawalId = toNumber(transaction.WithdrawalID ?? transaction[1]);
+  const stallId = toNumber(transaction.StallID ?? transaction[2]);
+  const ccnDayId = toNumber(transaction.CCNDayID ?? transaction[3]);
+
   const customerWallet = transaction.CustomerWallet ?? transaction[4];
   const stallOwnerWallet = transaction.StallOwnerWallet ?? transaction[5];
-  const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
-  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[8]);
 
-  const isNegative = BigInt(signedAmount) < 0n;
+  const amount = (transaction.Amount ?? transaction[6]).toString();
+  const signedAmount = (transaction.SignedAmount ?? transaction[7]).toString();
+
+  const amountSGDCents = (
+    transaction.AmountSGDCents ??
+    transaction[8] ??
+    "0"
+  ).toString();
+
+  const signedAmountSGDCents = (
+    transaction.SignedAmountSGDCents ??
+    transaction[9] ??
+    "0"
+  ).toString();
+
+  const transactionAt = toNumber(transaction.TransactionAt ?? transaction[10]);
+
   const isWithdrawal = transactionTypeValue === 2;
+  const hasSGDAmount = BigInt(signedAmountSGDCents) !== 0n;
+
+  const amountType = hasSGDAmount
+    ? BigInt(signedAmountSGDCents) < 0n
+      ? "negative"
+      : "positive"
+    : BigInt(signedAmount) < 0n
+      ? "negative"
+      : "positive";
 
   return {
     TransactionID: isWithdrawal ? `WDR-${withdrawalId}` : `PAY-${paymentId}`,
     PaymentID: paymentId,
     WithdrawalID: withdrawalId,
-    StallID: toNumber(transaction.StallID ?? transaction[2]),
-    CCNDayID: toNumber(transaction.CCNDayID ?? transaction[3]),
+    StallID: stallId,
+    CCNDayID: ccnDayId,
     CustomerWallet: customerWallet,
     StallOwnerWallet: stallOwnerWallet,
     Wallet: isWithdrawal ? stallOwnerWallet : customerWallet,
-    Amount: signedAmount,
-    DisplayAmount: formatWeiToEth(signedAmount),
+    Amount: amount,
+    SignedAmount: signedAmount,
+    AmountSGDCents: amountSGDCents,
+    SignedAmountSGDCents: signedAmountSGDCents,
+    DisplayAmount: hasSGDAmount
+      ? formatSignedSGDCents(signedAmountSGDCents)
+      : formatWeiToEth(signedAmount),
+    EthAmount: hasSGDAmount ? formatWeiToEth(signedAmount) : "",
     TransactionAt: transactionAt,
     Type: transactionTypeLabels[transactionTypeValue] || "Transaction",
     Status: transactionStatusLabels[transactionTypeValue] || "Recorded",
-    amountType: isNegative ? "negative" : "positive",
-    statusType: isNegative ? "negative" : "positive",
+    amountType,
+    statusType: amountType,
   };
 };
 
-const getTransactionNetEarned = (transactions) => {
-  return transactions.reduce((total, transaction) => {
-    const isWithdrawal = transaction.WithdrawalID > 0;
+const getTransactionNetEarnedTotals = (transactions) => {
+  return transactions.reduce(
+    (totals, transaction) => {
+      const isWithdrawal = transaction.WithdrawalID > 0;
 
-    if (isWithdrawal) {
-      return total;
-    }
+      if (isWithdrawal) {
+        return totals;
+      }
 
-    return total + BigInt(transaction.Amount);
-  }, 0n);
+      return {
+        totalWei: totals.totalWei + BigInt(transaction.SignedAmount || "0"),
+        totalSGDCents:
+          totals.totalSGDCents +
+          BigInt(transaction.SignedAmountSGDCents || "0"),
+      };
+    },
+    {
+      totalWei: 0n,
+      totalSGDCents: 0n,
+    },
+  );
 };
 
 const getFriendlyErrorMessage = (error) => {
@@ -200,7 +263,10 @@ const StallTransaction = () => {
   const [selectedStall, setSelectedStall] = useState(null);
   const [ccnDayName, setCcnDayName] = useState("");
   const [stallTransactions, setStallTransactions] = useState([]);
-  const [totalEarned, setTotalEarned] = useState("0 ETH");
+  const [totalEarned, setTotalEarned] = useState({
+    sgd: "S$0.00",
+    eth: "0 ETH",
+  });
 
   const [isLoadingPage, setIsLoadingPage] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -269,9 +335,12 @@ const StallTransaction = () => {
         setSelectedStall(mappedStall);
         setCcnDayName(resolvedCCNDayName);
         setStallTransactions(mappedTransactions);
-        setTotalEarned(
-          formatPositiveWeiToEth(getTransactionNetEarned(mappedTransactions)),
-        );
+        const earnedTotals = getTransactionNetEarnedTotals(mappedTransactions);
+
+        setTotalEarned({
+          sgd: formatSGDCents(earnedTotals.totalSGDCents),
+          eth: formatPositiveWeiToEth(earnedTotals.totalWei),
+        });
       } catch (error) {
         console.error("Stall transaction page load error:", error);
 
@@ -386,7 +455,10 @@ const StallTransaction = () => {
 
             <div>
               <span>Total earned</span>
-              <strong>{totalEarned}</strong>
+              <strong>{totalEarned.sgd}</strong>
+              <small className="stall-transaction-total-eth">
+                {totalEarned.eth}
+              </small>
             </div>
           </div>
         </div>
@@ -411,7 +483,7 @@ const StallTransaction = () => {
 
             <p>
               This stall does not have any payment, refund, or withdrawal
-              records yet.
+              records.
             </p>
           </div>
         ) : (
@@ -448,7 +520,11 @@ const StallTransaction = () => {
                           : "positive"
                       }
                     >
-                      {transaction.DisplayAmount}
+                      <strong>{transaction.DisplayAmount}</strong>
+
+                      {transaction.EthAmount && (
+                        <small>{transaction.EthAmount}</small>
+                      )}
                     </td>
 
                     <td>

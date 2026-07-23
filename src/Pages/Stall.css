@@ -1361,6 +1361,38 @@
   text-align: center;
 }
 
+.stall-expired-modal-backdrop {
+  z-index: 999;
+}
+
+.stall-expired-modal-card {
+  max-width: 620px;
+}
+
+.stall-expired-modal-card .stall-modal-heading.error span {
+  color: #ffb4b4;
+}
+
+.stall-expired-modal-card .stall-modal-heading.error h2 {
+  color: #ffffff;
+}
+
+.stall-expired-modal-note {
+  margin: 18px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.stall-modal-actions.single {
+  justify-content: center;
+}
+
+.stall-expired-owner-wallet {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 @media (max-width: 620px) {
   .stall-tab-toggle {
     width: 100%;

@@ -41,6 +41,14 @@ const formatWeiToEth = (weiValue) => {
   return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
 };
 
+const formatSGDCents = (centsValue) => {
+  const cents = BigInt(centsValue || "0");
+  const dollars = cents / 100n;
+  const centsPart = (cents % 100n).toString().padStart(2, "0");
+
+  return `S$${dollars}.${centsPart}`;
+};
+
 const mapStallFromContract = (stall) => {
   const stallTypeValue = toNumber(stall.stallType ?? stall[4]);
   const stallSchoolValue = toNumber(stall.StallSchool ?? stall[7]);
@@ -64,24 +72,37 @@ const mapStallFromContract = (stall) => {
   };
 };
 
-const getTransactionNetEarned = (transactions) => {
-  return transactions.reduce((total, transaction) => {
-    const transactionTypeValue = toNumber(
-      transaction.transactionType ?? transaction[9],
-    );
+const getTransactionNetEarnedTotals = (transactions) => {
+  return transactions.reduce(
+    (totals, transaction) => {
+      const transactionTypeValue = toNumber(
+        transaction.transactionType ?? transaction[11],
+      );
 
-    const signedAmount = BigInt(
-      (transaction.SignedAmount ?? transaction[7]).toString(),
-    );
+      const signedAmountWei = BigInt(
+        (transaction.SignedAmount ?? transaction[7] ?? "0").toString(),
+      );
 
-    const isWithdrawalTransaction = transactionTypeValue === 2;
+      const signedAmountSGDCents = BigInt(
+        (transaction.SignedAmountSGDCents ?? transaction[9] ?? "0").toString(),
+      );
 
-    if (isWithdrawalTransaction) {
-      return total;
-    }
+      const isWithdrawalTransaction = transactionTypeValue === 2;
 
-    return total + signedAmount;
-  }, 0n);
+      if (isWithdrawalTransaction) {
+        return totals;
+      }
+
+      return {
+        totalWei: totals.totalWei + signedAmountWei,
+        totalSGDCents: totals.totalSGDCents + signedAmountSGDCents,
+      };
+    },
+    {
+      totalWei: 0n,
+      totalSGDCents: 0n,
+    },
+  );
 };
 
 const getFriendlyErrorMessage = (error) => {
@@ -148,7 +169,8 @@ const StallHistory = () => {
 
             let ccnDayName = `CCN Day #${mappedStall.CCNDayID}`;
             let totalTransactions = 0;
-            let totalEarned = "0 ETH";
+            let totalEarnedSGD = "S$0.00";
+            let totalEarnedETH = "0 ETH";
 
             if (ccnDayContract && mappedStall.CCNDayID) {
               try {
@@ -170,10 +192,12 @@ const StallHistory = () => {
                     mappedStall.StallID,
                   );
 
+                const earnedTotals =
+                  getTransactionNetEarnedTotals(contractTransactions);
+
                 totalTransactions = contractTransactions.length;
-                totalEarned = formatWeiToEth(
-                  getTransactionNetEarned(contractTransactions),
-                );
+                totalEarnedSGD = formatSGDCents(earnedTotals.totalSGDCents);
+                totalEarnedETH = formatWeiToEth(earnedTotals.totalWei);
               } catch (error) {
                 console.error("Stall history transaction load error:", error);
               }
@@ -186,7 +210,8 @@ const StallHistory = () => {
                 ? "Completed"
                 : "Unresolved",
               TotalTransactions: totalTransactions,
-              TotalEarned: totalEarned,
+              TotalEarnedSGD: totalEarnedSGD,
+              TotalEarnedETH: totalEarnedETH,
             };
           }),
         );
@@ -283,7 +308,11 @@ const StallHistory = () => {
                 </div>
 
                 <div className="stall-history-card-footer">
-                  <strong>{stall.TotalEarned}</strong>
+                  <div className="stall-history-earned-amount">
+                    <strong>{stall.TotalEarnedSGD}</strong>
+                    <span>{stall.TotalEarnedETH}</span>
+                  </div>
+
                   <button type="button">View transactions</button>
                 </div>
               </div>
