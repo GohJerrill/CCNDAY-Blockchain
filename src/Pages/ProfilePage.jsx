@@ -604,13 +604,13 @@ const ProfilePage = () => {
       return;
     }
 
-    if (
-      userProfile.UserType !== "Customer" ||
-      !userProfile.IsStaffWhitelisted
-    ) {
+    const canCurrentProfileUpgrade =
+      userProfile.UserType === "Student" || userProfile.UserType === "Customer";
+
+    if (!canCurrentProfileUpgrade || !userProfile.IsStaffWhitelisted) {
       showErrorModal(
         "Unable to activate staff profile.",
-        "Your wallet must be a whitelisted customer before it can be upgraded to staff.",
+        "Your wallet must be a whitelisted student or customer before it can be upgraded to staff.",
       );
       return;
     }
@@ -624,9 +624,7 @@ const ProfilePage = () => {
       await tx.wait();
       await refreshProfilePage();
 
-      showSuccessModal(
-        "Your wallet has been upgraded back to Staff successfully.",
-      );
+      showSuccessModal("Your wallet has been upgraded to Staff successfully.");
     } catch (error) {
       console.error("Upgrade to staff error:", error);
 
@@ -697,7 +695,9 @@ const ProfilePage = () => {
   const displayRole = getDisplayRole(userProfile);
 
   const canUpgradeToStaff =
-    userProfile.UserType === "Customer" && userProfile.IsStaffWhitelisted;
+    (userProfile.UserType === "Student" ||
+      userProfile.UserType === "Customer") &&
+    userProfile.IsStaffWhitelisted;
 
   return (
     <div className={`profile-page profile-theme-${profileTheme}`}>

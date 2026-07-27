@@ -7,10 +7,40 @@ const formatWeiToEth = (weiValue) => {
   const wei = BigInt(weiValue || "0");
   const ether = 10n ** 18n;
   const whole = wei / ether;
-  const fraction = (wei % ether).toString().padStart(18, "0").slice(0, 4);
+  const fraction = (wei % ether).toString().padStart(18, "0").slice(0, 6);
   const cleanedFraction = fraction.replace(/0+$/, "");
 
   return `${whole}${cleanedFraction ? `.${cleanedFraction}` : ""} ETH`;
+};
+
+const formatSGDCents = (sgdCents) => {
+  const cents = Number(sgdCents);
+
+  if (!Number.isFinite(cents)) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("en-SG", {
+    style: "currency",
+    currency: "SGD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+};
+
+const getFormattedSGDAmount = (receipt) => {
+  if (receipt?.amountSGD) {
+    return receipt.amountSGD;
+  }
+
+  if (
+    receipt?.amountSGDCents !== undefined &&
+    receipt?.amountSGDCents !== null
+  ) {
+    return formatSGDCents(receipt.amountSGDCents);
+  }
+
+  return "-";
 };
 
 const formatWalletAddress = (walletAddress) => {
@@ -59,8 +89,9 @@ const PaymentSuccessPage = () => {
       "Payment Details",
       "---------------",
       `Selected product: ${receipt.productName || "No product selected"}`,
-      `Amount paid: ${receipt.amountWei} wei`,
-      `Amount paid: ${formatWeiToEth(receipt.amountWei)}`,
+      `Amount paid (SGD): ${getFormattedSGDAmount(receipt)}`,
+      `Amount paid (ETH): ${formatWeiToEth(receipt.amountWei)}`,
+      `Amount paid (wei): ${receipt.amountWei}`,
       `Customer wallet: ${receipt.customerWallet}`,
       `Transaction hash: ${receipt.transactionHash}`,
       `Block number: ${receipt.blockNumber || "-"}`,
@@ -145,14 +176,15 @@ const PaymentSuccessPage = () => {
         </p>
 
         <div className="payment-success-summary">
+
           <div>
-            <span>Amount paid</span>
+            <span>Amount paid (ETH)</span>
             <strong>{formatWeiToEth(receipt.amountWei)}</strong>
           </div>
 
           <div>
-            <span>Amount in wei</span>
-            <strong>{receipt.amountWei}</strong>
+            <span>Amount paid (SGD)</span>
+            <strong>{getFormattedSGDAmount(receipt)}</strong>
           </div>
         </div>
 
@@ -186,6 +218,21 @@ const PaymentSuccessPage = () => {
             </div>
 
             <div>
+              <span>Amount paid (SGD)</span>
+              <strong>{getFormattedSGDAmount(receipt)}</strong>
+            </div>
+
+            <div>
+              <span>Amount paid (ETH)</span>
+              <strong>{formatWeiToEth(receipt.amountWei)}</strong>
+            </div>
+
+            <div>
+              <span>Amount in wei</span>
+              <strong>{receipt.amountWei}</strong>
+            </div>
+
+            <div>
               <span>Stall location</span>
               <strong>{receipt.stallLocation || "-"}</strong>
             </div>
@@ -204,6 +251,10 @@ const PaymentSuccessPage = () => {
               </strong>
             </div>
 
+            <div>
+              <span>Block number</span>
+              <strong>{receipt.blockNumber || "-"}</strong>
+            </div>
             <div className="full">
               <span>Transaction hash</span>
               <strong title={receipt.transactionHash}>
@@ -211,12 +262,8 @@ const PaymentSuccessPage = () => {
               </strong>
             </div>
 
-            <div>
-              <span>Block number</span>
-              <strong>{receipt.blockNumber || "-"}</strong>
-            </div>
 
-            <div>
+            <div className="full">
               <span>Status</span>
               <strong>Successful</strong>
             </div>
