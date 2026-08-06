@@ -38,6 +38,7 @@ import "./App.css";
 // Implemented Oracle API for SGD conversion for Sepolia. Preparing to integrate it in my frontend and implement my second additional feature - 22 July 2026
 // Implemented and squash some bugs in our application. Preparing to implement the second additional feature - 24 July 2026
 // Implemented the second additional feature andf crushed some bugs in the application. Preparing to revise for test and understanding of code. - 28 July 2026
+// Implemented a change in my backend Solidity file and preparing to vet and to document on my Foundry code - 7 August 2026
 
 const DashboardLayout = () => {
   return (

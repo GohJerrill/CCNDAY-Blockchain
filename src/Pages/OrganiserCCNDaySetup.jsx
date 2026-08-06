@@ -41,6 +41,17 @@ const formatDateTimeInput = (unixSeconds) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
+const getMinimumFutureDateTime = () => {
+  /*
+   * datetime-local inputs normally use minute precision.
+   * Therefore, use the beginning of the next minute as the
+   * earliest selectable CCN Day start time.
+   */
+  const nextMinuteUnixSeconds = (Math.floor(Date.now() / 60000) + 1) * 60;
+
+  return formatDateTimeInput(nextMinuteUnixSeconds);
+};
+
 const formatDisplayDateTime = (dateTimeValue) => {
   if (!dateTimeValue) return "-";
 
@@ -110,6 +121,10 @@ const getErrorMessage = (error) => {
     return "There is already an active CCN Day. Please wait until it ends before creating a new one.";
   }
 
+  if (rawMessage.includes("CCNDayStartTimeNotFuture")) {
+    return "CCN Day start date and time must be in the future.";
+  }
+
   if (rawMessage.includes("CCNDayEndTimeInPast")) {
     return "CCN Day end time cannot be in the past.";
   }
@@ -175,7 +190,7 @@ const isNoCurrentCCNDayError = (error) => {
   );
 };
 
-const validateCCNDayForm = (form) => {
+const validateCCNDayForm = (form, { requireFutureEventStart = false } = {}) => {
   if (!form.name.trim()) {
     return "CCN Day name is required.";
   }
@@ -212,6 +227,10 @@ const validateCCNDayForm = (form) => {
   const eventEnd = new Date(form.eventEnd).getTime();
   const registrationStart = new Date(form.registrationStart).getTime();
   const registrationEnd = new Date(form.registrationEnd).getTime();
+
+  if (requireFutureEventStart && eventStart <= Date.now()) {
+    return "CCN Day start date and time must be in the future.";
+  }
 
   if (eventStart >= eventEnd) {
     return "CCN Day start must be before CCN Day end.";
@@ -304,7 +323,6 @@ const OrganiserCCNDaySetup = () => {
     }
   }, [ccnDayContract]);
 
-  
   useEffect(() => {
     loadCurrentCCNDay();
   }, [loadCurrentCCNDay]);
@@ -387,7 +405,9 @@ const OrganiserCCNDaySetup = () => {
   };
 
   const handleCreateCCNDay = async () => {
-    const validationMessage = validateCCNDayForm(createForm);
+    const validationMessage = validateCCNDayForm(createForm, {
+      requireFutureEventStart: true,
+    });
 
     if (validationMessage) {
       setCreateFormError(validationMessage);
@@ -494,7 +514,13 @@ const OrganiserCCNDaySetup = () => {
     }
   };
 
-  const renderFormFields = (form, handleInputChange, setForm, errorMessage) => (
+  const renderFormFields = (
+    form,
+    handleInputChange,
+    setForm,
+    errorMessage,
+    requireFutureEventStart = false,
+  ) => (
     <>
       <div className="organiser-ccn-form-grid">
         <label className="organiser-ccn-field organiser-ccn-full-field">
@@ -525,6 +551,9 @@ const OrganiserCCNDaySetup = () => {
             name="eventStart"
             value={form.eventStart}
             onChange={handleInputChange}
+            min={
+              requireFutureEventStart ? getMinimumFutureDateTime() : undefined
+            }
           />
         </label>
 
@@ -709,6 +738,7 @@ const OrganiserCCNDaySetup = () => {
             handleCreateInputChange,
             setCreateForm,
             createFormError,
+            true,
           )}
 
           <div className="organiser-ccn-action-row">
