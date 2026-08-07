@@ -7,6 +7,13 @@ import { useWeb3 } from "../context/Web3Context";
 import CareLinkLogo from "../assets/carelink-icon.svg";
 import "./PaymentPage.css";
 
+const PYTH_USD_SGD_FEED_ID =
+  "0x396a969a9c1480fa15ed50bc59149e2c0075a72fe8f458ed941ddec48bdb4918";
+
+const PYTH_HERMES_URL = "https://hermes.pyth.network/v2/updates/price/latest";
+
+const PYTH_FRONTEND_MAX_AGE_SECONDS = 90;
+
 const stallTypeOptions = [
   "Food & Beverages",
   "Games",
@@ -26,6 +33,52 @@ const schoolLabels = [
   "Humanities",
   "Others",
 ];
+
+const convertPythPriceTo8Decimals = (priceValue, expoValue) => {
+  const price = BigInt(priceValue);
+  const expo = Number(expoValue);
+
+  if (price <= 0n) {
+    throw new Error("Pyth returned an invalid USD/SGD price.");
+  }
+
+  if (!Number.isInteger(expo) || expo > 18 || expo < -18) {
+    throw new Error("Pyth returned an unsupported price exponent.");
+  }
+
+  if (expo >= 0) {
+    return price * 10n ** BigInt(expo + 8);
+  }
+
+  const priceDecimals = -expo;
+
+  if (priceDecimals < 8) {
+    return price * 10n ** BigInt(8 - priceDecimals);
+  }
+
+  if (priceDecimals > 8) {
+    return price / 10n ** BigInt(priceDecimals - 8);
+  }
+
+  return price;
+};
+
+const formatUSDSGDRate = (rate8Decimals) => {
+  if (!rate8Decimals) return "Unavailable";
+
+  const rate = BigInt(rate8Decimals);
+  const scale = 100000000n;
+  const whole = rate / scale;
+
+  const fraction = (rate % scale).toString().padStart(8, "0").slice(0, 4);
+
+  return `${whole}.${fraction}`;
+};
+
+const ensureHexPrefix = (value) => {
+  if (!value) return "";
+  return value.startsWith("0x") ? value : `0x${value}`;
+};
 
 const stallStatusLabels = ["Pending", "Open", "Closed", "Rejected"];
 
@@ -203,11 +256,11 @@ const getFriendlyPaymentErrorMessage = (error) => {
   }
 
   if (rawMessage.includes("InvalidOraclePrice")) {
-    return "The Chainlink oracle returned an invalid ETH/USD price. Please try again later.";
+    return "The payment oracle returned invalid exchange-rate data. Please refresh and try again.";
   }
 
   if (rawMessage.includes("StaleOraclePrice")) {
-    return "The Chainlink oracle price is too old right now. Please try again later.";
+    return "The exchange-rate data is too old to safely complete this payment. Please refresh and try again.";
   }
 
   if (rawMessage.includes("CCNDayPaymentNotStarted")) {
@@ -305,17 +358,134 @@ const PaymentPage = () => {
   );
   const [requiredPaymentWei, setRequiredPaymentWei] = useState("");
 
+  const [usdSgdPrice8Decimals, setUsdSgdPrice8Decimals] = useState("");
+  const [pythPriceUpdate, setPythPriceUpdate] = useState([]);
+  const [pythUpdateFeeWei, setPythUpdateFeeWei] = useState("");
+  const [pythPublishTime, setPythPublishTime] = useState(0);
+
   const [dragValue, setDragValue] = useState(0);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [isLoadingPythPrice, setIsLoadingPythPrice] = useState(true);
   const [isLoadingOracleAmount, setIsLoadingOracleAmount] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+
+  const [pythPriceError, setPythPriceError] = useState("");
 
   const [pageError, setPageError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
   const selectedProductId = getProductId(selectedProduct);
+
+  useEffect(() => {
+    let shouldUpdateState = true;
+
+    const loadPythUSDSGDPrice = async () => {
+      if (!paymentsContract) {
+        if (shouldUpdateState) {
+          setIsLoadingPythPrice(false);
+          setPythPriceError("Payment contract is not connected yet.");
+        }
+
+        return;
+      }
+
+      try {
+        if (shouldUpdateState) {
+          setIsLoadingPythPrice(true);
+          setPythPriceError("");
+        }
+
+        const requestUrl =
+          `${PYTH_HERMES_URL}` +
+          `?ids[]=${encodeURIComponent(PYTH_USD_SGD_FEED_ID)}` +
+          `&encoding=hex&parsed=true`;
+
+        const response = await fetch(requestUrl);
+
+        if (!response.ok) {
+          throw new Error(
+            `Pyth Hermes request failed with status ${response.status}.`,
+          );
+        }
+
+        const data = await response.json();
+
+        const parsedFeed = data?.parsed?.[0];
+        const binaryUpdates = data?.binary?.data;
+
+        if (!parsedFeed?.price) {
+          throw new Error("Pyth did not return a USD/SGD price.");
+        }
+
+        if (!Array.isArray(binaryUpdates) || binaryUpdates.length === 0) {
+          throw new Error("Pyth did not return signed price update data.");
+        }
+
+        const publishTime = Number(parsedFeed.price.publish_time);
+
+        if (!publishTime) {
+          throw new Error("Pyth returned an invalid publish time.");
+        }
+
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const priceAge = currentTimestamp - publishTime;
+
+        if (priceAge < 0 || priceAge > PYTH_FRONTEND_MAX_AGE_SECONDS) {
+          throw new Error(
+            "The Pyth USD/SGD quote is not fresh enough for payment.",
+          );
+        }
+
+        const price8Decimals = convertPythPriceTo8Decimals(
+          parsedFeed.price.price,
+          parsedFeed.price.expo,
+        );
+
+        const formattedPriceUpdate = binaryUpdates.map(ensureHexPrefix);
+
+        const updateFee =
+          await paymentsContract.GetPythUpdateFee(formattedPriceUpdate);
+
+        if (!shouldUpdateState) return;
+
+        setUsdSgdPrice8Decimals(price8Decimals.toString());
+        setPythPriceUpdate(formattedPriceUpdate);
+        setPythUpdateFeeWei(updateFee.toString());
+        setPythPublishTime(publishTime);
+        setPythPriceError("");
+      } catch (error) {
+        console.error("Pyth USD/SGD load error:", error);
+
+        if (!shouldUpdateState) return;
+
+        setUsdSgdPrice8Decimals("");
+        setPythPriceUpdate([]);
+        setPythUpdateFeeWei("");
+        setPythPublishTime(0);
+
+        setPythPriceError(
+          "Unable to obtain a fresh USD/SGD exchange rate. Payment is temporarily unavailable.",
+        );
+      } finally {
+        if (shouldUpdateState) {
+          setIsLoadingPythPrice(false);
+        }
+      }
+    };
+
+    loadPythUSDSGDPrice();
+
+    // Refresh every minute so the signed quote does not become stale
+    // while the customer is still on the payment page.
+    const refreshInterval = window.setInterval(loadPythUSDSGDPrice, 60000);
+
+    return () => {
+      shouldUpdateState = false;
+      window.clearInterval(refreshInterval);
+    };
+  }, [paymentsContract]);
 
   useEffect(() => {
     const loadPaymentPage = async () => {
@@ -379,7 +549,8 @@ const PaymentPage = () => {
       if (
         !paymentsContract ||
         !amountSGDCents ||
-        BigInt(amountSGDCents) <= 0n
+        BigInt(amountSGDCents) <= 0n ||
+        !usdSgdPrice8Decimals
       ) {
         setRequiredPaymentWei("");
         return;
@@ -392,6 +563,7 @@ const PaymentPage = () => {
         const requiredWei =
           await paymentsContract.CalculateRequiredWeiFromSGDCents(
             amountSGDCents,
+            usdSgdPrice8Decimals,
           );
 
         if (!shouldUpdateState) return;
@@ -416,7 +588,7 @@ const PaymentPage = () => {
     return () => {
       shouldUpdateState = false;
     };
-  }, [paymentsContract, amountSGDCents]);
+  }, [paymentsContract, amountSGDCents, usdSgdPrice8Decimals]);
 
   useEffect(() => {
     const loadWalletBalance = async () => {
@@ -445,6 +617,14 @@ const PaymentPage = () => {
   }, [isConnected, walletAddress]);
 
   const paymentState = getCCNDayPaymentState(currentCCNDay);
+
+  const totalRequiredWei = useMemo(() => {
+    if (!requiredPaymentWei || pythUpdateFeeWei === "") {
+      return "";
+    }
+
+    return (BigInt(requiredPaymentWei) + BigInt(pythUpdateFeeWei)).toString();
+  }, [requiredPaymentWei, pythUpdateFeeWei]);
 
   const isViewingOwnStall = isSameWalletAddress(
     walletAddress,
@@ -476,6 +656,22 @@ const PaymentPage = () => {
       return paymentState.message;
     }
 
+    if (isLoadingPythPrice) {
+      return "Getting the latest USD/SGD exchange rate...";
+    }
+
+    if (pythPriceError) {
+      return pythPriceError;
+    }
+
+    if (
+      !usdSgdPrice8Decimals ||
+      pythPriceUpdate.length === 0 ||
+      pythUpdateFeeWei === ""
+    ) {
+      return "A verified USD/SGD exchange rate is required before payment.";
+    }
+
     const sgdValidationMessage = getSGDInputValidationMessage(paymentAmountSGD);
 
     if (sgdValidationMessage) {
@@ -498,8 +694,11 @@ const PaymentPage = () => {
       return "Required blockchain amount must be more than 0 wei.";
     }
 
-    if (BigInt(requiredPaymentWei) > BigInt(walletBalanceWei || "0")) {
-      return "Your wallet balance is too low for this payment.";
+    if (
+      !totalRequiredWei ||
+      BigInt(totalRequiredWei) > BigInt(walletBalanceWei || "0")
+    ) {
+      return "Your wallet balance is too low for this payment and oracle update fee.";
     }
 
     return "";
@@ -511,20 +710,31 @@ const PaymentPage = () => {
     isViewingOwnStall,
     paymentState,
     paymentAmountSGD,
+    isLoadingPythPrice,
+    pythPriceError,
+    usdSgdPrice8Decimals,
+    pythPriceUpdate,
+    pythUpdateFeeWei,
     isLoadingOracleAmount,
     amountSGDCents,
     requiredPaymentWei,
+    totalRequiredWei,
     walletBalanceWei,
   ]);
 
   const canDragToPay =
     !validationMessage &&
     !isLoadingBalance &&
+    !isLoadingPythPrice &&
     !isLoadingOracleAmount &&
     !isPaying &&
     Boolean(stall) &&
     Boolean(amountSGDCents) &&
-    Boolean(requiredPaymentWei);
+    Boolean(requiredPaymentWei) &&
+    Boolean(usdSgdPrice8Decimals) &&
+    pythPriceUpdate.length > 0 &&
+    pythUpdateFeeWei !== "" &&
+    Boolean(totalRequiredWei);
 
   const dragProgressStyle = {
     "--drag-progress": `${dragValue}%`,
@@ -545,8 +755,24 @@ const PaymentPage = () => {
       !stall ||
       !paymentsContract ||
       !amountSGDCents ||
-      !requiredPaymentWei
+      !requiredPaymentWei ||
+      !totalRequiredWei ||
+      !usdSgdPrice8Decimals ||
+      !pythPublishTime ||
+      pythUpdateFeeWei === "" ||
+      pythPriceUpdate.length === 0
     ) {
+      setDragValue(0);
+      return;
+    }
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const pythPriceAge = currentTimestamp - pythPublishTime;
+
+    if (pythPriceAge < 0 || pythPriceAge > PYTH_FRONTEND_MAX_AGE_SECONDS) {
+      setPaymentError(
+        "The USD/SGD exchange rate has expired. Please wait for CareLink to refresh the rate.",
+      );
       setDragValue(0);
       return;
     }
@@ -559,8 +785,9 @@ const PaymentPage = () => {
       const tx = await paymentsContract.PaySGDToStall(
         stall.StallID,
         amountSGDCents,
+        pythPriceUpdate,
         {
-          value: BigInt(requiredPaymentWei),
+          value: BigInt(totalRequiredWei),
         },
       );
 
@@ -734,7 +961,6 @@ const PaymentPage = () => {
               <div className="payment-selected-product empty">
                 <span>Custom stall payment</span>
                 <strong>Pay any SGD amount to this stall</strong>
-                <p>Enter the amount you want to pay, like PayLah-style.</p>
               </div>
             )}
 
@@ -749,21 +975,17 @@ const PaymentPage = () => {
               />
             </label>
 
-            {/* <label className="payment-form-field">
-              <span>Required blockchain amount</span>
-              <input
-                type="text"
-                value={
-                  isLoadingOracleAmount
-                    ? "Calculating with Chainlink oracle..."
-                    : requiredPaymentWei
-                      ? `${requiredPaymentWei} wei`
-                      : ""
-                }
-                readOnly
-                disabled
-              />
-            </label> */}
+            <div className="payment-balance-note">
+              <span>Live USD/SGD rate</span>
+
+              <strong>
+                {isLoadingPythPrice
+                  ? "Getting live rate..."
+                  : usdSgdPrice8Decimals
+                    ? `1 USD = S$${formatUSDSGDRate(usdSgdPrice8Decimals)}`
+                    : "Unavailable"}
+              </strong>
+            </div>
 
             <div className="payment-balance-note">
               <span>Estimated ETH payment</span>

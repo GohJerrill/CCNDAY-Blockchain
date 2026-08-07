@@ -25,6 +25,11 @@
         "internalType": "address",
         "name": "_ethUsdPriceFeedAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pythContractAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -140,6 +145,11 @@
         "internalType": "uint256",
         "name": "_amountSGDCents",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "_pythPriceUpdate",
+        "type": "bytes[]"
       }
     ],
     "name": "PaySGDToStall",
@@ -347,6 +357,11 @@
         "internalType": "uint256",
         "name": "_amountSGDCents",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_usdSgdPrice8Decimals",
+        "type": "uint256"
       }
     ],
     "name": "CalculateRequiredWeiFromSGDCents",
@@ -408,6 +423,19 @@
   {
     "inputs": [],
     "name": "GetLatestETHUSDPrice",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GetLatestUSDSGDPrice8Decimals",
     "outputs": [
       {
         "internalType": "uint256",
@@ -571,6 +599,25 @@
   {
     "inputs": [],
     "name": "GetMyWithdrawableBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "_pythPriceUpdate",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "GetPythUpdateFee",
     "outputs": [
       {
         "internalType": "uint256",
@@ -811,6 +858,32 @@
   },
   {
     "inputs": [],
+    "name": "pyth",
+    "outputs": [
+      {
+        "internalType": "contract IPyth",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PYTH_PRICE_MAX_AGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "stallContract",
     "outputs": [
       {
@@ -824,12 +897,12 @@
   },
   {
     "inputs": [],
-    "name": "USD_TO_SGD_RATE_8_DECIMALS",
+    "name": "USD_SGD_PRICE_FEED_ID",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bytes32",
         "name": "",
-        "type": "uint256"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",

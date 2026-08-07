@@ -2611,10 +2611,15 @@ const Stall = () => {
 
               <div>
                 <span>Refund amount</span>
-                <strong>{selectedTransaction.amount} SGD</strong>
+
+                <strong>
+                  {selectedTransaction.amount.replace(/^\+/, "-")} SGD
+                </strong>
 
                 {selectedTransaction.ethAmount && (
-                  <small>{selectedTransaction.ethAmount}</small>
+                  <small>
+                    {selectedTransaction.ethAmount.replace(/^\+/, "-")}
+                  </small>
                 )}
               </div>
             </div>
