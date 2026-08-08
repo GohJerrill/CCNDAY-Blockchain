@@ -12,7 +12,7 @@ const PYTH_USD_SGD_FEED_ID =
 
 const PYTH_HERMES_URL = "https://hermes.pyth.network/v2/updates/price/latest";
 
-const PYTH_FRONTEND_MAX_AGE_SECONDS = 90;
+const PYTH_FRONTEND_MAX_AGE_SECONDS = 4 * 24 * 60 * 60;
 
 const stallTypeOptions = [
   "Food & Beverages",

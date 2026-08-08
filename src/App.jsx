@@ -40,6 +40,7 @@ import "./App.css";
 // Implemented the second additional feature andf crushed some bugs in the application. Preparing to revise for test and understanding of code. - 28 July 2026
 // Implemented a change in my backend Solidity file and preparing to vet and to document on my Foundry code - 7 August 2026
 // Implemented and made my additional for ChainLink stronger by adding the Pyth Oracle for SGD conversion. Preparing to test and document my code - 8 August 2026
+// Implemented and change the frontend to use the Pyth Oracle for SGD conversion. Preparing to test and document my code - 9 August 2026
 
 const DashboardLayout = () => {
   return (
