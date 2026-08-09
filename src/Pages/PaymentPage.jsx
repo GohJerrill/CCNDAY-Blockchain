@@ -358,6 +358,8 @@ const PaymentPage = () => {
   );
   const [requiredPaymentWei, setRequiredPaymentWei] = useState("");
 
+  const [hasEditedPaymentAmount, setHasEditedPaymentAmount] = useState(false);
+
   const [usdSgdPrice8Decimals, setUsdSgdPrice8Decimals] = useState("");
   const [pythPriceUpdate, setPythPriceUpdate] = useState([]);
   const [pythUpdateFeeWei, setPythUpdateFeeWei] = useState("");
@@ -743,6 +745,7 @@ const PaymentPage = () => {
 
   const handlePaymentAmountChange = (event) => {
     setPaymentAmountSGD(event.target.value);
+    setHasEditedPaymentAmount(true);
     setDragValue(0);
     setPaymentNotice("");
     setPaymentError("");
@@ -799,8 +802,13 @@ const PaymentPage = () => {
         stallName: stall.StallName,
         stallLocation: stall.StallLocation,
         stallOwnerWallet: stall.StallOwnerWallet,
-        productName: selectedProduct ? getProductName(selectedProduct) : "",
-        productId: selectedProduct ? selectedProductId : 0,
+        productName:
+          selectedProduct && !hasEditedPaymentAmount
+            ? getProductName(selectedProduct)
+            : "",
+
+        productId:
+          selectedProduct && !hasEditedPaymentAmount ? selectedProductId : 0,
         amountWei: requiredPaymentWei,
         amountEth: formatWeiToEth(requiredPaymentWei),
         amountSGDCents,
@@ -948,14 +956,11 @@ const PaymentPage = () => {
 
             <h2>Confirm payment</h2>
 
-            {selectedProduct ? (
+            {selectedProduct && !hasEditedPaymentAmount ? (
               <div className="payment-selected-product">
                 <span>Selected product reference</span>
                 <strong>{getProductName(selectedProduct)}</strong>
-                <p>
-                  Product amount pre-filled as{" "}
-                  {formatSGDCents(getProductSGDCents(selectedProduct))}
-                </p>
+                <p>{formatSGDCents(getProductSGDCents(selectedProduct))}</p>
               </div>
             ) : (
               <div className="payment-selected-product empty">

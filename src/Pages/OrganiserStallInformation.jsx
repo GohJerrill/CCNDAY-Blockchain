@@ -1010,14 +1010,6 @@ const OrganiserStallInformation = () => {
                   This will approve the stall and change its status to open.
                 </p>
               </div>
-
-              <button
-                type="button"
-                className="organiser-stall-info-modal-close"
-                onClick={closeModal}
-              >
-                ×
-              </button>
             </div>
 
             <label className="organiser-stall-info-field">
