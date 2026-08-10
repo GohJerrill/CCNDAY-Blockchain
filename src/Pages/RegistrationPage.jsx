@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./RegistrationPage.css";
 import StaffRegisterIcon from "../assets/StaffRegister.svg";
 import StudentRegisterIcon from "../assets/StudentRegister.svg";
+import CustomerRegisterIcon from "../assets/Customer_login.svg";
 import { IoIosArrowDown } from "react-icons/io";
 import { useWeb3 } from "../context/Web3Context";
 
@@ -25,6 +26,11 @@ const studentSchools = [
   { label: "School of Humanities & Social Sciences", value: "Humanities" },
 ];
 
+const registrationOptions = [
+  { label: "Student", value: "student" },
+  { label: "Customer", value: "customer" },
+];
+
 const staffSchools = [...studentSchools, { label: "Others", value: "Others" }];
 
 const RegistrationPage = () => {
@@ -45,12 +51,17 @@ const RegistrationPage = () => {
   const [username, setUsername] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isRegistrationDropdownOpen, setIsRegistrationDropdownOpen] =
+    useState(false);
+
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   const dropdownRef = useRef(null);
+  const registrationDropdownRef = useRef(null);
 
   const isStaffRegistration = registrationType === "staff";
+  const isCustomerRegistration = registrationType === "customer";
 
   const schoolOptions = useMemo(() => {
     return isStaffRegistration ? staffSchools : studentSchools;
@@ -63,9 +74,18 @@ const RegistrationPage = () => {
     );
   }, [schoolOptions, selectedSchool]);
 
+  const selectedRegistrationLabel = useMemo(() => {
+    return (
+      registrationOptions.find((option) => option.value === registrationType)
+        ?.label || "Select registration type"
+    );
+  }, [registrationType]);
+
   const registerIcon = isStaffRegistration
     ? StaffRegisterIcon
-    : StudentRegisterIcon;
+    : isCustomerRegistration
+      ? CustomerRegisterIcon
+      : StudentRegisterIcon;
 
   useEffect(() => {
     const checkWalletRegistrationType = async () => {
@@ -117,6 +137,13 @@ const RegistrationPage = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+
+      if (
+        registrationDropdownRef.current &&
+        !registrationDropdownRef.current.contains(event.target)
+      ) {
+        setIsRegistrationDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleOutsideClick);
@@ -139,6 +166,14 @@ const RegistrationPage = () => {
   const handleSchoolSelect = (schoolValue) => {
     setSelectedSchool(schoolValue);
     setIsDropdownOpen(false);
+    resetMessages();
+  };
+
+  const handleRegistrationTypeChange = (type) => {
+    setRegistrationType(type);
+    setSelectedSchool("");
+    setIsDropdownOpen(false);
+    setIsRegistrationDropdownOpen(false);
     resetMessages();
   };
 
@@ -182,35 +217,45 @@ const RegistrationPage = () => {
       return;
     }
 
-    if (!selectedSchool) {
-      setFormError("Please select a school first.");
-      return;
-    }
+    let selectedSchoolEnumValue;
 
-    if (!isStaffRegistration && selectedSchool === "Others") {
-      setFormError("Students must select an appropriate TP school.");
-      return;
-    }
+    if (!isCustomerRegistration) {
+      if (!selectedSchool) {
+        setFormError("Please select a school first.");
+        return;
+      }
 
-    const selectedSchoolEnumValue = SCHOOL_ENUM_VALUES[selectedSchool];
+      if (!isStaffRegistration && selectedSchool === "Others") {
+        setFormError("Students must select an appropriate TP school.");
+        return;
+      }
 
-    if (selectedSchoolEnumValue === undefined) {
-      setFormError("Invalid school selected.");
-      return;
+      selectedSchoolEnumValue = SCHOOL_ENUM_VALUES[selectedSchool];
+
+      if (selectedSchoolEnumValue === undefined) {
+        setFormError("Invalid school selected.");
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
 
-      const tx = isStaffRegistration
-        ? await usersContract.RegisterAsStaff(
-            trimmedUsername,
-            selectedSchoolEnumValue,
-          )
-        : await usersContract.RegisterAsStudent(
-            trimmedUsername,
-            selectedSchoolEnumValue,
-          );
+      let tx;
+
+      if (isStaffRegistration) {
+        tx = await usersContract.RegisterAsStaff(
+          trimmedUsername,
+          selectedSchoolEnumValue,
+        );
+      } else if (isCustomerRegistration) {
+        tx = await usersContract.RegisterAsCustomer(trimmedUsername);
+      } else {
+        tx = await usersContract.RegisterAsStudent(
+          trimmedUsername,
+          selectedSchoolEnumValue,
+        );
+      }
 
       setSuccessMessage(
         "Registration transaction sent. Waiting for confirmation...",
@@ -263,7 +308,9 @@ const RegistrationPage = () => {
                 alt={
                   isStaffRegistration
                     ? "Staff registration icon"
-                    : "Student registration icon"
+                    : isCustomerRegistration
+                      ? "Customer registration icon"
+                      : "Student registration icon"
                 }
               />
             </div>
@@ -272,13 +319,17 @@ const RegistrationPage = () => {
               <h2>
                 {isStaffRegistration
                   ? "Staff Registration"
-                  : "Student Registration"}
+                  : isCustomerRegistration
+                    ? "Customer Registration"
+                    : "Student Registration"}
               </h2>
 
               <p>
                 {isStaffRegistration
                   ? "Your wallet is whitelisted by the organiser, so you can register as staff."
-                  : "Student accounts can apply for stalls only if their school is eligible."}
+                  : isCustomerRegistration
+                    ? "Customer accounts can browse stalls and make payments during an active CCN Day."
+                    : "Student accounts can apply for stalls only if their school is eligible."}
               </p>
             </div>
           </div>
@@ -286,6 +337,56 @@ const RegistrationPage = () => {
           {!isConnected && (
             <div className="staff-warning-pill">
               Please connect your MetaMask wallet before registering.
+            </div>
+          )}
+
+          {!isStaffRegistration && (
+            <div className="registration-field">
+              <label>Register as</label>
+
+              <div
+                className="registration-custom-select"
+                ref={registrationDropdownRef}
+              >
+                <button
+                  type="button"
+                  className="registration-select-button has-value"
+                  onClick={() => {
+                    setIsRegistrationDropdownOpen((current) => !current);
+                    setIsDropdownOpen(false);
+                  }}
+                  aria-expanded={isRegistrationDropdownOpen}
+                  disabled={!isConnected || isSubmitting}
+                >
+                  <span>{selectedRegistrationLabel}</span>
+
+                  <IoIosArrowDown
+                    className={`registration-select-icon ${
+                      isRegistrationDropdownOpen ? "open" : ""
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`registration-options ${
+                    isRegistrationDropdownOpen ? "open" : ""
+                  }`}
+                >
+                  {registrationOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`registration-option ${
+                        registrationType === option.value ? "selected" : ""
+                      }`}
+                      onClick={() => handleRegistrationTypeChange(option.value)}
+                      disabled={isSubmitting}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -303,64 +404,65 @@ const RegistrationPage = () => {
             />
           </div>
 
-          <div className="registration-field">
-            <label>
-              {isStaffRegistration ? "School / Department" : "TP School"}
-            </label>
+          {!isCustomerRegistration && (
+            <div className="registration-field">
+              <label>
+                {isStaffRegistration ? "School / Department" : "TP School"}
+              </label>
 
-            <div className="registration-custom-select" ref={dropdownRef}>
-              <button
-                type="button"
-                className={`registration-select-button ${
-                  selectedSchool ? "has-value" : ""
-                }`}
-                onClick={() => setIsDropdownOpen((current) => !current)}
-                aria-expanded={isDropdownOpen}
-                disabled={!isConnected || isSubmitting}
-              >
-                <span>{selectedSchoolLabel}</span>
+              <div className="registration-custom-select" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className={`registration-select-button ${
+                    selectedSchool ? "has-value" : ""
+                  }`}
+                  onClick={() => setIsDropdownOpen((current) => !current)}
+                  aria-expanded={isDropdownOpen}
+                  disabled={!isConnected || isSubmitting}
+                >
+                  <span>{selectedSchoolLabel}</span>
 
-                <IoIosArrowDown
-                  className={`registration-select-icon ${
+                  <IoIosArrowDown
+                    className={`registration-select-icon ${
+                      isDropdownOpen ? "open" : ""
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`registration-options ${
                     isDropdownOpen ? "open" : ""
                   }`}
-                />
-              </button>
-
-              <div
-                className={`registration-options ${
-                  isDropdownOpen ? "open" : ""
-                }`}
-              >
-                {schoolOptions.map((school) => (
-                  <button
-                    key={school.value}
-                    type="button"
-                    className={`registration-option ${
-                      selectedSchool === school.value ? "selected" : ""
-                    }`}
-                    onClick={() => handleSchoolSelect(school.value)}
-                    disabled={isSubmitting}
-                  >
-                    {school.label}
-                  </button>
-                ))}
+                >
+                  {schoolOptions.map((school) => (
+                    <button
+                      key={school.value}
+                      type="button"
+                      className={`registration-option ${
+                        selectedSchool === school.value ? "selected" : ""
+                      }`}
+                      onClick={() => handleSchoolSelect(school.value)}
+                      disabled={isSubmitting}
+                    >
+                      {school.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+          )}
 
-            {formError && (
-              <p className="registration-error-text">{formError}</p>
-            )}
+          {formError && <p className="registration-error-text">{formError}</p>}
 
-            {successMessage && (
-              <p className="registration-success-text">{successMessage}</p>
-            )}
-          </div>
+          {successMessage && (
+            <p className="registration-success-text">{successMessage}</p>
+          )}
 
           {!isStaffRegistration && (
             <div className="staff-warning-pill">
-              TP staff? Please contact the organiser to whitelist your wallet
-              before registering.
+              {isCustomerRegistration
+                ? "Customer accounts can browse and pay stalls, but unable to create stalls."
+                : "TP staff? Please contact the organiser to whitelist your wallet before registering."}
             </div>
           )}
 
@@ -389,7 +491,9 @@ const RegistrationPage = () => {
                 ? "Registering..."
                 : isStaffRegistration
                   ? "Register as Staff"
-                  : "Register as Student"}
+                  : isCustomerRegistration
+                    ? "Register as Customer"
+                    : "Register as Student"}
             </button>
           )}
         </form>

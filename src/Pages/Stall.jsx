@@ -15,6 +15,13 @@ const transactionTypeLabels = [
 
 const transactionStatusLabels = ["Received", "Refunded", "Withdrawn"];
 
+const USER_TYPE = {
+  None: 0,
+  Student: 1,
+  Staff: 2,
+  Customer: 3,
+};
+
 const formatSignedWeiToEth = (signedWeiValue) => {
   const signedWei = BigInt(signedWeiValue);
   const isNegative = signedWei < 0n;
@@ -319,6 +326,10 @@ const getFriendlyBlockchainErrorMessage = (error, fallbackMessage) => {
     return "You are not allowed to refund this payment.";
   }
 
+  if (rawMessage.includes("NotStudentOrStaff")) {
+    return "Customer accounts cannot create stalls. Only registered Students and Staff can submit stall applications.";
+  }
+
   if (
     rawMessage.includes("execution reverted (unknown custom error)") ||
     rawMessage.includes("CALL_EXCEPTION")
@@ -560,7 +571,6 @@ const Stall = () => {
   const [ownedStall, setOwnedStall] = useState(null);
   const [isOwnedStallCCNDayEnded, setIsOwnedStallCCNDayEnded] = useState(false);
   const [products, setProducts] = useState([]);
-  const [productEthEstimates, setProductEthEstimates] = useState({});
 
   const [stallTransactions, setStallTransactions] = useState([]);
   const [isLoadingStallTransactions, setIsLoadingStallTransactions] =
@@ -680,7 +690,6 @@ const Stall = () => {
               setOwnedStall(mappedWalletStall);
               setIsOwnedStallCCNDayEnded(false);
               setProducts([]);
-              setProductEthEstimates({});
               setStallTransactions([]);
               setStallTransactionsError("");
               setWithdrawableBalance("0");
@@ -843,6 +852,18 @@ const Stall = () => {
           return;
         }
 
+        const userTypeValue = toNumber(
+          await usersContract.GetWalletUserType(walletAddress),
+        );
+
+        if (userTypeValue === USER_TYPE.Customer) {
+          setPageMessage(
+            "Customer accounts cannot create stalls. Only registered Students and Staff can submit stall applications.",
+          );
+          setStallPageState(stallPageStates.CANNOT_APPLY);
+          return;
+        }
+
         const canApply =
           await stallsContract.CanWalletCreateStall(walletAddress);
 
@@ -889,51 +910,6 @@ const Stall = () => {
     paymentsContract,
     refreshKey,
   ]);
-
-  useEffect(() => {
-    let shouldUpdateState = true;
-
-    const loadProductEthEstimates = async () => {
-      if (!paymentsContract || products.length === 0) {
-        setProductEthEstimates({});
-        return;
-      }
-
-      try {
-        const estimateEntries = await Promise.all(
-          products.map(async (product) => {
-            try {
-              const requiredWei =
-                await paymentsContract.CalculateRequiredWeiFromSGDCents(
-                  product.ProductPriceSGDCents,
-                );
-
-              return [product.ProductID, requiredWei.toString()];
-            } catch (error) {
-              console.error("Product ETH estimate load error:", error);
-              return [product.ProductID, ""];
-            }
-          }),
-        );
-
-        if (shouldUpdateState) {
-          setProductEthEstimates(Object.fromEntries(estimateEntries));
-        }
-      } catch (error) {
-        console.error("Product ETH estimates load error:", error);
-
-        if (shouldUpdateState) {
-          setProductEthEstimates({});
-        }
-      }
-    };
-
-    loadProductEthEstimates();
-
-    return () => {
-      shouldUpdateState = false;
-    };
-  }, [paymentsContract, products]);
 
   const displayedCCNDay = currentCCNDay;
 
@@ -2142,15 +2118,6 @@ const Stall = () => {
                         <h3>{product.ProductName}</h3>
 
                         <p>{product.ProductDescription}</p>
-
-                        {productEthEstimates[product.ProductID] && (
-                          <p className="stall-product-eth-estimate">
-                            Estimated blockchain amount:{" "}
-                            {formatWeiToEth(
-                              productEthEstimates[product.ProductID],
-                            )}
-                          </p>
-                        )}
                       </div>
                     </article>
                   ))}

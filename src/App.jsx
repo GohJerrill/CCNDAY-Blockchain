@@ -42,6 +42,7 @@ import "./App.css";
 // Implemented and made my additional for ChainLink stronger by adding the Pyth Oracle for SGD conversion. Preparing to test and document my code - 8 August 2026
 // Implemented and change the frontend to use the Pyth Oracle for SGD conversion. Preparing to test and document my code - 9 August 2026
 // SUBMISSION BABY - Finalised the code and checking if there is any bug present or if there is any isues with it - 10 August 2026
+// Made a small change to my application to allow customer login. Preparing for submission - 10 August 2026
 
 const DashboardLayout = () => {
   return (

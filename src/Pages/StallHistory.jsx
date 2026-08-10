@@ -133,6 +133,7 @@ const StallHistory = () => {
   const {
     isConnected,
     walletAddress,
+    usersContract,
     stallsContract,
     ccnDayContract,
     paymentsContract,
@@ -141,6 +142,7 @@ const StallHistory = () => {
   const [archivedStalls, setArchivedStalls] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState("");
+  const [isCustomerAccount, setIsCustomerAccount] = useState(false);
 
   const handleViewTransactions = (stallId) => {
     navigate(`/StallTransactions/${stallId}`);
@@ -148,7 +150,7 @@ const StallHistory = () => {
 
   useEffect(() => {
     const loadStallHistory = async () => {
-      if (!isConnected || !walletAddress || !stallsContract) {
+      if (!isConnected || !walletAddress || !usersContract || !stallsContract) {
         setIsLoadingHistory(false);
         setArchivedStalls([]);
         setHistoryError(
@@ -160,6 +162,16 @@ const StallHistory = () => {
       try {
         setIsLoadingHistory(true);
         setHistoryError("");
+        setIsCustomerAccount(false);
+
+        const userType = await usersContract.GetWalletUserType(walletAddress);
+        const userTypeValue = toNumber(userType);
+
+        if (userTypeValue === 3) {
+          setIsCustomerAccount(true);
+          setArchivedStalls([]);
+          return;
+        }
 
         const contractStalls = await stallsContract.GetMyStallHistory();
 
@@ -230,16 +242,14 @@ const StallHistory = () => {
   }, [
     isConnected,
     walletAddress,
+    usersContract,
     stallsContract,
     ccnDayContract,
     paymentsContract,
   ]);
-
   return (
     <main className="stall-history-page">
       <section className="stall-history-header">
-        <span className="stall-history-kicker">Archived stalls</span>
-
         <h1>Stall History</h1>
 
         <p className="BRUH">
@@ -254,6 +264,15 @@ const StallHistory = () => {
             label="Loading stall history..."
             sublabel="Please wait while CareLink loads your archived stalls."
           />
+        </section>
+      ) : isCustomerAccount ? (
+        <section className="stall-history-empty-state">
+          <h2>Stall History Unavailable</h2>
+
+          <p>
+            You are registered as a Customer. Only Student or Staff accounts
+            that have owned stalls can access stall history.
+          </p>
         </section>
       ) : historyError ? (
         <section className="stall-history-empty-state">

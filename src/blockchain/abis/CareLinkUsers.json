@@ -58,6 +58,19 @@
         "internalType": "string",
         "name": "_username",
         "type": "string"
+      }
+    ],
+    "name": "RegisterAsCustomer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_username",
+        "type": "string"
       },
       {
         "internalType": "enum School",
