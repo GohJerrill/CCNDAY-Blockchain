@@ -44,6 +44,7 @@ import "./App.css";
 // SUBMISSION BABY - Finalised the code and checking if there is any bug present or if there is any isues with it - 10 August 2026
 // Made a small change to my application to allow customer login. Preparing for submission - 10 August 2026
 // Preparing for second Submission - 10 August 2026
+// SUBMISSION 3 - Changed the Landing Page details - 10 August 2026
 
 const DashboardLayout = () => {
   return (

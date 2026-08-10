@@ -122,16 +122,17 @@ const LandingPage = () => {
         <div className="section-grid">
           <div className="info-card">
             <span>01</span>
-            <h3>Scan the stall QR</h3>
-            <p>Open the selected stall page and view available products.</p>
+            <h3>Connect MetaMask</h3>
+            <p>
+              Connect you wallet to Metamask and register if you haven't
+              already.
+            </p>
           </div>
 
           <div className="info-card">
             <span>02</span>
-            <h3>Connect MetaMask</h3>
-            <p>
-              Find the product you want, and input the price of the product.
-            </p>
+            <h3>View an available stall</h3>
+            <p>Open an available stall and view available products.</p>
           </div>
 
           <div className="info-card">
@@ -187,7 +188,7 @@ const LandingPage = () => {
               <h3>Transparent records</h3>
               <p>
                 Payments, refunds, and withdrawals can be tracked clearly,
-                making the carnival payment flow more accountable.
+                making the CCN Day payment flow more accountable.
               </p>
             </div>
           </div>
@@ -263,7 +264,7 @@ const LandingPage = () => {
               </li>
               <li>
                 <span className="role-check">✓</span>
-                Manage CCN settings
+                Manage CCN Day settings
               </li>
               <li>
                 <span className="role-check">✓</span>
